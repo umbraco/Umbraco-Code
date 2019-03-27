@@ -13,8 +13,18 @@ public void Map(SomeType source, OtherType target)
 ~~~~
 
 Raises an error and fails to compile, if not all assignable properties of `target` (from `OtherType` and parents) are assigned a value.
-
 The fix can be invoked (ctrl + ;) to generate the missing properties.
+When the fix can find a corresponding property in `source`, it generates the assignment (corresponding by name, whatever the type).
+When no corresponding property can be found, the fix generates an assignment to `default` with a comment.
+
+~~~~
+// Umbraco.Code.MapAll
+public void Map(SomeType source, OtherType target)
+{
+    target.Value1 = source.Value1;
+	target.Value2 = default; // fixme
+}
+~~~~
 
 It is possible to ignore some properties, eg:
 

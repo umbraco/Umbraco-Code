@@ -15,7 +15,7 @@ namespace Umbraco.Code.MapAll
         public const string AvailableMembersKey = DiagnosticId + "_Available";
 
         private const string Category = "Usage";
-        private const string HelpLinkUri = "https://github.com/umbraco/"; // fixme?
+        private const string HelpLinkUri = "https://github.com/umbraco/Umbraco-Code";
 
         private static readonly LocalizableString Title = "MapAll Analyzer";
         private static readonly LocalizableString MessageFormat = "Method does not map propert{0} {1}.";

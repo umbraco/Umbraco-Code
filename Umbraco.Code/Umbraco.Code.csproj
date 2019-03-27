@@ -8,6 +8,12 @@
     <Version>1.0.5</Version>
     <Authors>Umbraco HQ</Authors>
     <Company>Umbraco</Company>
+    <PackageProjectUrl>https://github.com/umbraco/Umbraco-Code</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/umbraco/Umbraco-Code</RepositoryUrl>
+    <Description>Code-level tools for Umbraco</Description>
+    <Copyright>Copyright (C) Umbraco 2019</Copyright>
+    <PackageLicenseUrl>http://opensource.org/licenses/MIT</PackageLicenseUrl>
+    <PackageIconUrl>https://umbraco.com/dist/nuget/logo-small.png</PackageIconUrl>
   </PropertyGroup>
 
   <ItemGroup>
