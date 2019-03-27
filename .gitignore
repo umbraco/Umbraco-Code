@@ -1,0 +1,35 @@
+
+# common files
+*.obj
+*.pdb
+*.user
+*.aps
+*.pch
+*.vspscc
+*.orig
+*.suo
+*.vs10x
+*.ndproj
+*.ignorer.*
+
+# common directories
+.DS_Store
+._.DS_Store
+.vs/
+/local/
+
+# build directories
+[Bb]in/
+[Db]ebug*/
+[Rr]elease*/
+obj/
+
+# tools
+_ReSharper*/
+_NCrunch_*/
+*.ncrunchsolution
+*.ncrunchsolution.user
+*.ncrunchproject
+*.crunchsolution.cache
+tools/NDepend/
+
