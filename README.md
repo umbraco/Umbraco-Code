@@ -21,7 +21,7 @@ When no corresponding property can be found, the fix generates an assignment to 
 // Umbraco.Code.MapAll
 public void Map(SomeType source, OtherType target)
 {
-    target.Value1 = source.Value1;
+	target.Value1 = source.Value1;
 	target.Value2 = default; // fixme
 }
 ~~~~
