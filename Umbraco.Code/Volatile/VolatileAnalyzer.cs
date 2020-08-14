@@ -26,8 +26,11 @@ namespace Umbraco.Code.Volatile
         private static readonly DiagnosticDescriptor Rule 
             = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category,
                 DiagnosticSeverity.Error, true, Description, HelpLinkUri);
+        private static readonly DiagnosticDescriptor SupressedRule
+            = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category,
+                DiagnosticSeverity.Warning, true, Description, HelpLinkUri);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(Rule);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(Rule, SupressedRule);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -39,21 +42,31 @@ namespace Umbraco.Code.Volatile
             var invocationExpr = (InvocationExpressionSyntax)context.Node;
             var methodSymbol =
                 context.SemanticModel.GetSymbolInfo(invocationExpr, context.CancellationToken).Symbol as IMethodSymbol;
+
             // Collect attributes 
             if (!(methodSymbol is null))
             {
-                var attributes = new List<AttributeData>();
-                attributes.AddRange(methodSymbol.GetAttributes());
-                attributes.AddRange(methodSymbol.ContainingType.GetAttributes());
+                var attributes = methodSymbol.GetAttributes().Union(methodSymbol.ContainingType.GetAttributes());
 
-                if (attributes.Count > 0)
+                if (!(attributes is null) && attributes.Any())
                 {
                     foreach (var attribute in attributes)
                     {
                         if (attribute.AttributeClass.Name == "Volatile")
                         {
-                            var diagnostic = Diagnostic.Create(Rule, invocationExpr.GetLocation());
-                            context.ReportDiagnostic(diagnostic);
+                            var assemblyAttributes = (context.ContainingSymbol as IMethodSymbol).ContainingAssembly.GetAttributes();
+                            // Why is the "Attribute" part removed from normal attribute, but not assembly attribute? o.O 
+                            if (assemblyAttributes.Any(x => !(x is null) && x.AttributeClass.Name == "SuppressVolatile"))
+                            {
+                                var diagnostic = Diagnostic.Create(SupressedRule, invocationExpr.GetLocation());
+                                context.ReportDiagnostic(diagnostic);
+                            }
+                            else
+                            {
+                                var diagnostic = Diagnostic.Create(Rule, invocationExpr.GetLocation());
+                                context.ReportDiagnostic(diagnostic);
+                            }
+                            
                         }
                     }
                 }

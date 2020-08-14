@@ -98,5 +98,74 @@ namespace VolatileDemo
 
             VerifyCSharpDiagnostic(code, expected);
         }
+
+        [TestMethod]
+        public void NoErrorIfNoAttribute()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    public class DemoClass
+    {
+        public void VolatileMethod()
+        {
+            Console.WriteLine(""!!!Danger to manifold!!!"");
+        }
+
+    }
+
+    public class DemoClass2
+    {
+        public void Test()
+        {
+            var testClass = new DemoClass();
+            testClass.VolatileMethod();
+        }
+    }
+}
+";
+
+            VerifyCSharpDiagnostic(code);
+        }
+
+        [TestMethod]
+        public void EnsureWarnWhenSuppressed()
+        {
+            const string code = @"
+[assembly: SuppressVolatile]
+namespace VolatileDemo
+{
+    [Volatile]
+    public class DemoClass
+    {
+        public void VolatileMethod()
+        {
+            Console.WriteLine(""!!!Danger to manifold!!!"");
+        }
+
+    }
+
+    public class DemoClass2
+    {
+        public void Test()
+        {
+            var testClass = new DemoClass();
+            testClass.VolatileMethod();
+        }
+    }
+}
+";
+
+            var expected = new DiagnosticResult
+            {
+                Id = "UmbracoCodeVolatile",
+                Message = "Method is volatile",
+                Severity = DiagnosticSeverity.Warning,
+                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 20, 13) }
+            };
+
+            VerifyCSharpDiagnostic(code, expected);
+        }
+
     }
 }
