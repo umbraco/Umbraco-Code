@@ -17,12 +17,6 @@ namespace Umbraco.Code.Tests
             return new UmbracoVolatileAnalyzer();
         }
 
-        protected override CodeFixProvider GetCSharpCodeFixProvider()
-        {
-            // TODO: Change this
-            return new MapAllFixProvider();
-        }
-
         [TestMethod]
         public void ErrorMethodCallFromVolatileObject()
         {
@@ -53,7 +47,7 @@ namespace VolatileDemo
             var expected = new DiagnosticResult
             {
                 Id = "UmbracoCodeVolatile",
-                Message = "Method is volatile",
+                Message = "VolatileDemo.DemoClass.VolatileMethod() is volatile",
                 Severity = DiagnosticSeverity.Error,
                 Locations = new[] { new DiagnosticResultLocation("Test0.cs", 19, 13) }
             };
@@ -91,7 +85,7 @@ namespace VolatileDemo
             var expected = new DiagnosticResult
             {
                 Id = "UmbracoCodeVolatile",
-                Message = "Method is volatile",
+                Message = "VolatileDemo.DemoClass.VolatileMethod() is volatile",
                 Severity = DiagnosticSeverity.Error,
                 Locations = new[] { new DiagnosticResultLocation("Test0.cs", 19, 13) }
             };
@@ -120,6 +114,40 @@ namespace VolatileDemo
         {
             var testClass = new DemoClass();
             testClass.VolatileMethod();
+        }
+    }
+}
+";
+
+            VerifyCSharpDiagnostic(code);
+        }
+
+        [TestMethod]
+        public void NonVolatileAmongstVolatile()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    public class DemoClass
+    {
+        [UmbracoVolatile]
+        public void VolatileMethod()
+        {
+            Console.WriteLine(""""!!!Danger to manifold!!!"""");
+        }
+
+        public void NonVolatileMethod(){
+            Console.WriteLine(""Saef"")
+        }
+
+    }
+
+    public class DemoClass2
+    {
+        public void Test()
+        {
+            var testClass = new DemoClass();
+            testClass.NonVolatileMethod();
         }
     }
 }
@@ -159,7 +187,7 @@ namespace VolatileDemo
             var expected = new DiagnosticResult
             {
                 Id = "UmbracoCodeVolatile",
-                Message = "Method is volatile",
+                Message = "VolatileDemo.DemoClass.VolatileMethod() is volatile",
                 Severity = DiagnosticSeverity.Warning,
                 Locations = new[] { new DiagnosticResultLocation("Test0.cs", 20, 13) }
             };
