@@ -4,8 +4,8 @@ using System.Text;
 
 namespace Umbraco.Code.Volatile
 {
-    public class VolatileAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Assembly)]
+    public class UmbracoSuppressVolatile : Attribute
     {
-
     }
 }

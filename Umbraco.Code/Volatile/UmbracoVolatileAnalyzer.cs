@@ -13,24 +13,24 @@ using Microsoft.CodeAnalysis.Diagnostics;
 namespace Umbraco.Code.Volatile
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VolatileAnalyzer : DiagnosticAnalyzer
+    public class UmbracoVolatileAnalyzer : DiagnosticAnalyzer
     {
         public const string DiagnosticId = "UmbracoCodeVolatile";
         public const string Category = "Usage";
         private const string HelpLinkUri = "https://github.com/umbraco/Umbraco-Code";
 
-        private static readonly LocalizableString Title = "Volatile method";
+        private static readonly LocalizableString Title = "Umbraco Volatile method";
         private static readonly LocalizableString MessageFormat = "Method is volatile";
         private static readonly LocalizableString Description = "Method is volatile and may break in the future";
 
-        private static readonly DiagnosticDescriptor Rule 
+        private static readonly DiagnosticDescriptor ErrorRule 
             = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category,
                 DiagnosticSeverity.Error, true, Description, HelpLinkUri);
-        private static readonly DiagnosticDescriptor SupressedRule
+        private static readonly DiagnosticDescriptor WarningRule
             = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category,
                 DiagnosticSeverity.Warning, true, Description, HelpLinkUri);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(Rule, SupressedRule);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(ErrorRule, WarningRule);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -52,18 +52,18 @@ namespace Umbraco.Code.Volatile
                 {
                     foreach (var attribute in attributes)
                     {
-                        if (attribute.AttributeClass.Name == "Volatile")
+                        if (attribute.AttributeClass.Name == "UmbracoVolatile")
                         {
                             var assemblyAttributes = (context.ContainingSymbol as IMethodSymbol).ContainingAssembly.GetAttributes();
                             // Why is the "Attribute" part removed from normal attribute, but not assembly attribute? o.O 
-                            if (assemblyAttributes.Any(x => !(x is null) && x.AttributeClass.Name == "SuppressVolatile"))
+                            if (assemblyAttributes.Any(x => !(x is null) && x.AttributeClass.Name == "UmbracoSuppressVolatile"))
                             {
-                                var diagnostic = Diagnostic.Create(SupressedRule, invocationExpr.GetLocation());
+                                var diagnostic = Diagnostic.Create(WarningRule, invocationExpr.GetLocation());
                                 context.ReportDiagnostic(diagnostic);
                             }
                             else
                             {
-                                var diagnostic = Diagnostic.Create(Rule, invocationExpr.GetLocation());
+                                var diagnostic = Diagnostic.Create(ErrorRule, invocationExpr.GetLocation());
                                 context.ReportDiagnostic(diagnostic);
                             }
                             

@@ -14,7 +14,7 @@ namespace Umbraco.Code.Tests
     {
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
-            return new VolatileAnalyzer();
+            return new UmbracoVolatileAnalyzer();
         }
 
         protected override CodeFixProvider GetCSharpCodeFixProvider()
@@ -29,7 +29,7 @@ namespace Umbraco.Code.Tests
             const string code = @"
 namespace VolatileDemo
 {
-    [Volatile]
+    [UmbracoVolatile]
     public class DemoClass
     {
         public void VolatileMethod()
@@ -69,7 +69,7 @@ namespace VolatileDemo
 {
     public class DemoClass
     {
-        [Volatile]
+        [UmbracoVolatile]
         public void VolatileMethod()
         {
             Console.WriteLine(""!!!Danger to manifold!!!"");
@@ -132,10 +132,10 @@ namespace VolatileDemo
         public void EnsureWarnWhenSuppressed()
         {
             const string code = @"
-[assembly: SuppressVolatile]
+[assembly: UmbracoSuppressVolatile]
 namespace VolatileDemo
 {
-    [Volatile]
+    [UmbracoVolatile]
     public class DemoClass
     {
         public void VolatileMethod()
