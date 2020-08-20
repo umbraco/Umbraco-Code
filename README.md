@@ -6,7 +6,7 @@ Helps replacing AutoMapper with static code, without missing properties. Adding 
 
 The following code:
 
-~~~~
+~~~~c#
 // Umbraco.Code.MapAll
 public void Map(SomeType source, OtherType target)
 {}
@@ -17,7 +17,7 @@ The fix can be invoked (ctrl + ;) to generate the missing properties.
 When the fix can find a corresponding property in `source`, it generates the assignment (corresponding by name, whatever the type).
 When no corresponding property can be found, the fix generates an assignment to `default` with a comment.
 
-~~~~
+~~~~c#
 // Umbraco.Code.MapAll
 public void Map(SomeType source, OtherType target)
 {
@@ -28,11 +28,60 @@ public void Map(SomeType source, OtherType target)
 
 It is possible to ignore some properties, eg:
 
-~~~~
+~~~~c#
 // Umbraco.Code.MapAll -PropertyToIgnore -Another
 public void Map(SomeType source, OtherType target)
 {}
 ~~~~
+
+#### Volatile
+
+Allows for methods and classes to be marked as volatile with an attribute. Methods marked with volatile, or from a class marked as volatile,
+will throw an error and fail to compile. The error can be suppressed to a warning within an assembly by using the UmbracoSuppressVolatileAttribute.
+
+This is intented to be used for objects/methods that were previously marked as internal, typically because the may break in the future, 
+but are still useful in some aspect, typically testing where it doesn't matter if a method breaks. 
+
+Marking a method as volatile looks like this: 
+~~~c#
+    public class DemoClass
+    {
+        [UmbracoVolatile]
+        public void VolatileMethod()
+        {
+            // Do volatile things here.
+        }
+
+    }
+~~~
+
+Whenever ```DemoClass.VolatileMethod``` is invoked there'll be raised an UmbracoCodeVolatile error, to suppress it to a warning use the UmbracoSuppressVolatileAttribute: 
+~~~c#
+[assembly: UmbracoSuppressVolatile]
+namespace VolatileDemo
+{
+    public class DemoClass
+    {
+		[UmbracoVolatile]
+        public void VolatileMethod()
+        {
+           // Volatile things here...
+        }
+
+    }
+
+    public class DemoClass2
+    {
+        public void Test()
+        {
+            var testClass = new DemoClass();
+            testClass.VolatileMethod();
+        }
+    }
+}
+~~~
+
+Now there'll only be raised a warning even though ```DemoClass.VolatileMethod``` is marked as volatile.
 
 #### Sources and References
 
