@@ -55,7 +55,8 @@ Marking a method as volatile looks like this:
     }
 ~~~
 
-Whenever ```DemoClass.VolatileMethod``` is invoked there'll be raised an UmbracoCodeVolatile error, to suppress it to a warning use the UmbracoSuppressVolatileAttribute: 
+Whenever ```DemoClass.VolatileMethod``` is invoked there'll be raised an UmbracoCodeVolatile error, 
+to suppress it to a warning use the assembly level UmbracoSuppressVolatileAttribute: 
 ~~~c#
 [assembly: UmbracoSuppressVolatile]
 namespace VolatileDemo
@@ -82,6 +83,13 @@ namespace VolatileDemo
 ~~~
 
 Now there'll only be raised a warning even though ```DemoClass.VolatileMethod``` is marked as volatile.
+
+##### The Attributes
+It's worthwile noting that the attributes are compared by name and not by type. 
+
+This means that it's not needed to use the attributes that are included in this project (the namespace of analyzers is not accecible), 
+any attribute named UmbracoVolatileAttribute or UmbracoSuppressVolatileAttribute will do the trick. 
+
 
 #### Sources and References
 
