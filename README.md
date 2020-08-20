@@ -84,6 +84,21 @@ namespace VolatileDemo
 
 Now there'll only be raised a warning even though ```DemoClass.VolatileMethod``` is marked as volatile.
 
+The same thing goes for objects, if you do something like this: 
+~~~c#
+    [UmbracoVolatile]
+    public class DemoClass
+    {
+        public void VolatileMethod()
+        {
+            // Do volatile things here.
+        }
+
+    }
+~~~
+
+All of DemoClasses methods will be marked as volatile. 
+
 ##### The Attributes
 It's worthwile noting that the attributes are compared by name and not by type. 
 

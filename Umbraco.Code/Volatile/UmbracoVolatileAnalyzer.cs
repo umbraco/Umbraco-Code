@@ -16,7 +16,7 @@ namespace Umbraco.Code.Volatile
     public class UmbracoVolatileAnalyzer : DiagnosticAnalyzer
     {
         public const string DiagnosticId = "UmbracoCodeVolatile";
-        public const string Category = "Usage"; // TODO: Is usage the appripriate category? 
+        public const string Category = "Access modifier";
         private const string HelpLinkUri = "https://github.com/umbraco/Umbraco-Code"; // TODO: use actual helpful link
 
         private static readonly LocalizableString Title = "Umbraco Volatile method";
@@ -41,7 +41,7 @@ namespace Umbraco.Code.Volatile
             context.RegisterSyntaxNodeAction(AnalyzeNode, SyntaxKind.InvocationExpression);
         }
 
-        private void AnalyzeNode(SyntaxNodeAnalysisContext context)
+        private static void AnalyzeNode(SyntaxNodeAnalysisContext context)
         {
             // Get the method that is invoked as an expression
             var invocationExpr = (InvocationExpressionSyntax)context.Node;
