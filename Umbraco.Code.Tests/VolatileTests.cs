@@ -340,15 +340,8 @@ namespace VolatileDemo
 
     }
 }";
-            var expected = new DiagnosticResult
-            {
-                Id = "UmbracoCodeVolatile",
-                Message = "VolatileDemo.DemoClass.VolatileMethod() is volatile",
-                Severity = DiagnosticSeverity.Error,
-                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 13) }
-            };
 
-            VerifyCSharpDiagnostic(code, expected);
+            VerifyCSharpDiagnostic(code);
         }
 
         [TestMethod]
@@ -372,15 +365,8 @@ namespace VolatileDemo
 
     }
 }";
-            var expected = new DiagnosticResult
-            {
-                Id = "UmbracoCodeVolatile",
-                Message = "VolatileDemo.DemoClass.VolatileMethod() is volatile",
-                Severity = DiagnosticSeverity.Error,
-                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 13) }
-            };
 
-            VerifyCSharpDiagnostic(code, expected);
+            VerifyCSharpDiagnostic(code);
         }
 
 
