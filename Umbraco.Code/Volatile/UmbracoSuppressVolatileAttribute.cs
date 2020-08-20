@@ -5,7 +5,7 @@ using System.Text;
 namespace Umbraco.Code.Volatile
 {
     [AttributeUsage(AttributeTargets.Assembly)]
-    public class UmbracoSuppressVolatile : Attribute
+    public class UmbracoSuppressVolatileAttribute : Attribute
     {
     }
 }

@@ -160,7 +160,7 @@ namespace VolatileDemo
         public void EnsureWarnWhenSuppressed()
         {
             const string code = @"
-[assembly: UmbracoSuppressVolatile]
+[assembly: UmbracoSuppressVolatileAttribute]
 namespace VolatileDemo
 {
     [UmbracoVolatile]
