@@ -320,7 +320,7 @@ namespace VolatileDemo
         }
 
         [TestMethod]
-        public void ErrorFromVolatileUsedWithinOwnClass()
+        public void NoErrorFromVolatileUsedWithinOwnClass()
         {
             const string code = @"
 namespace VolatileDemo
@@ -345,7 +345,7 @@ namespace VolatileDemo
         }
 
         [TestMethod]
-        public void VolatileClassErrorFromSelf()
+        public void VolatileClassNoErrorFromSelf()
         {
             const string code = @"
 namespace VolatileDemo

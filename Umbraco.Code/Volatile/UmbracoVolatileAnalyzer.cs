@@ -53,6 +53,7 @@ namespace Umbraco.Code.Volatile
 
             if (!(invokedMethodSymbol is null))
             {
+                // Don't raise an error if the volatile method is used within its own class
                 if(!SymbolEqualityComparer.Default.Equals(invokedMethodSymbol.ContainingType, containingMethodSymbol.ContainingType))
                 {
                     // Get the attributes from the invoked method and the class containing it.
