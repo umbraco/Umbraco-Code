@@ -46,33 +46,39 @@ namespace Umbraco.Code.Volatile
             // Get the method that is invoked as an expression
             var invocationExpr = (InvocationExpressionSyntax)context.Node;
             // Turn it into a method symbol allowing us to access it's attributes and containing class.
-            var methodSymbol =
+            var invokedMethodSymbol =
                 context.SemanticModel.GetSymbolInfo(invocationExpr, context.CancellationToken).Symbol as IMethodSymbol;
+            // The method from which the invoked method was invoked
+            var containingMethodSymbol = context.ContainingSymbol as IMethodSymbol;
 
-            if (!(methodSymbol is null))
+            if (!(invokedMethodSymbol is null))
             {
-                // Get the attributes from the invoked method and the class containing it.
-                var attributes = methodSymbol.GetAttributes().Union(methodSymbol.ContainingType.GetAttributes());
-                // Check if the method or its containing class is marked with the volatile attribute
-                // the attribute is however only checked by name, meaning that's it's not nececary to use the attributes from this project. 
-                if (!(attributes is null) && attributes.Any(x => (x.AttributeClass.Name == "UmbracoVolatile" || x.AttributeClass.Name == "UmbracoVolatileAttribute")))
+                if(!SymbolEqualityComparer.Default.Equals(invokedMethodSymbol.ContainingType, containingMethodSymbol.ContainingType))
                 {
-                    // Get the assembly that the method was invoked from, and get all the attributes from that assembly.
-                    var assemblyAttributes = (context.ContainingSymbol as IMethodSymbol).ContainingAssembly.GetAttributes();
+                    // Get the attributes from the invoked method and the class containing it.
+                    var attributes = invokedMethodSymbol.GetAttributes().Union(invokedMethodSymbol.ContainingType.GetAttributes());
+                    // Check if the method or its containing class is marked with the volatile attribute
+                    // the attribute is however only checked by name, meaning that's it's not nececary to use the attributes from this project. 
+                    if (!(attributes is null) && attributes.Any(x => (x.AttributeClass.Name == "UmbracoVolatile" || x.AttributeClass.Name == "UmbracoVolatileAttribute")))
+                    {
+                        // Get the assembly that the method was invoked from, and get all the attributes from that assembly.
+                        var assemblyAttributes = containingMethodSymbol.ContainingAssembly.GetAttributes();
 
-                    // If the assembly has a SuppressVolatileAttribue issue a warning otherwise issue an error.
-                    if (assemblyAttributes.Any(x => !(x is null) &&
-                    (x.AttributeClass.Name == "UmbracoSuppressVolatileAttribute" || x.AttributeClass.Name == "UmbracoSuppressVolatile")))
-                    {
-                        var diagnostic = Diagnostic.Create(WarningRule, invocationExpr.GetLocation(), methodSymbol.ToString());
-                        context.ReportDiagnostic(diagnostic);
-                    }
-                    else
-                    {
-                        var diagnostic = Diagnostic.Create(ErrorRule, invocationExpr.GetLocation(), methodSymbol.ToString());
-                        context.ReportDiagnostic(diagnostic);
+                        // If the assembly has a SuppressVolatileAttribue issue a warning otherwise issue an error.
+                        if (assemblyAttributes.Any(x => !(x is null) &&
+                        (x.AttributeClass.Name == "UmbracoSuppressVolatileAttribute" || x.AttributeClass.Name == "UmbracoSuppressVolatile")))
+                        {
+                            var diagnostic = Diagnostic.Create(WarningRule, invocationExpr.GetLocation(), invokedMethodSymbol.ToString());
+                            context.ReportDiagnostic(diagnostic);
+                        }
+                        else
+                        {
+                            var diagnostic = Diagnostic.Create(ErrorRule, invocationExpr.GetLocation(), invokedMethodSymbol.ToString());
+                            context.ReportDiagnostic(diagnostic);
+                        }
                     }
                 }
+
             }
         }
     }
