@@ -62,7 +62,7 @@ namespace VolatileDemo
 {
     public class DemoClass
     {
-[UmbracoVolatile]
+	[UmbracoVolatile]
         public void VolatileMethod()
         {
            // Volatile things here...
