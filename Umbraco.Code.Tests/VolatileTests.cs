@@ -160,7 +160,7 @@ namespace VolatileDemo
         public void EnsureWarnWhenSuppressed()
         {
             const string code = @"
-[assembly: UmbracoSuppressVolatileAttribute]
+[assembly: UmbracoSuppressVolatile]
 namespace VolatileDemo
 {
     [UmbracoVolatile]
@@ -196,7 +196,7 @@ namespace VolatileDemo
         }
 
         [TestMethod]
-        public void WarningFromInheretedVolatile()
+        public void ErrorFromInheretedVolatile()
         {
             const string code = @"
 namespace VolatileDemo
@@ -237,5 +237,157 @@ namespace VolatileDemo
             VerifyCSharpDiagnostic(code, expected);
         }
 
+
+        [TestMethod]
+        public void ErrorFromInheretedVolatileMethod()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    public class DemoClass
+    {   
+        [UmbracoVolatile]
+        public void VolatileMethod()
+        {
+            Console.WriteLine(""!!!Danger to manifold!!!"");
+        }
+
+    }
+
+    public class InheretedVolatile : DemoClass
+    {
+
+    }
+
+    public class DemoClass2
+    {
+        public void Test()
+        {
+            var testClass = new InheretedVolatile();
+            testClass.VolatileMethod();
+        }
+    }
+}";
+
+            var expected = new DiagnosticResult
+            {
+                Id = "UmbracoCodeVolatile",
+                Message = "VolatileDemo.DemoClass.VolatileMethod() is volatile",
+                Severity = DiagnosticSeverity.Error,
+                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 24, 13) }
+            };
+
+            VerifyCSharpDiagnostic(code, expected);
+        }
+
+        [TestMethod]
+        public void NoErrorFromInheretedNonVolatileMethod()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    public class DemoClass
+    {   
+        [UmbracoVolatile]
+        public void VolatileMethod()
+        {
+            Console.WriteLine(""!!!Danger to manifold!!!"");
+        }
+
+        public void NonVolatileMethod()
+        {
+            Console.WriteLine(""No Dange"");
+        }
+
+    }
+
+    public class InheretedVolatile : DemoClass
+    {
+
+    }
+
+    public class DemoClass2
+    {
+        public void Test()
+        {
+            var testClass = new InheretedVolatile();
+            testClass.NonVolatileMethod();
+        }
+    }
+}";
+
+            VerifyCSharpDiagnostic(code);
+        }
+
+        [TestMethod]
+        public void ErrorFromVolatileUsedWithinOwnClass()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    public class DemoClass
+    {   
+        [UmbracoVolatile]
+        public void VolatileMethod()
+        {
+            Console.WriteLine(""!!!Danger to manifold!!!"");
+        }
+
+        public void NonVolatileMethod()
+        {
+            VolatileMethod();
+        }
+
+    }
+}";
+            var expected = new DiagnosticResult
+            {
+                Id = "UmbracoCodeVolatile",
+                Message = "VolatileDemo.DemoClass.VolatileMethod() is volatile",
+                Severity = DiagnosticSeverity.Error,
+                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 13) }
+            };
+
+            VerifyCSharpDiagnostic(code, expected);
+        }
+
+
+        [TestMethod]
+        public void NoErrorFromInherentedNonVolatileParrent()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    public class NonVolatileParrent
+    {
+        public void NonVolatileMethod()
+        {
+
+        }
+    }
+
+    [UmbracoVolatile]
+    public class DemoClass : NonVolatileParrent
+    {   
+        
+        public void VolatileMethod()
+        {
+            Console.WriteLine(""!!!Danger to manifold!!!"");
+        }
+
+    }
+
+    public class Consumer
+    {
+        public void testMethod()
+        {
+            var testClass = new DemoClass();
+            testClass.NonVolatileMethod();    
+        }
+    }
+}";
+
+            VerifyCSharpDiagnostic(code);
+        }
     }
 }
