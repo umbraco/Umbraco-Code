@@ -35,6 +35,7 @@ namespace Umbraco.Code.Volatile
 
         public override void Initialize(AnalysisContext context)
         {
+            context.EnableConcurrentExecution();
             context.RegisterSyntaxNodeAction(AnalyzeNode, SyntaxKind.InvocationExpression);
         }
 
@@ -44,28 +45,24 @@ namespace Umbraco.Code.Volatile
             var methodSymbol =
                 context.SemanticModel.GetSymbolInfo(invocationExpr, context.CancellationToken).Symbol as IMethodSymbol;
 
-            // Collect attributes 
             if (!(methodSymbol is null))
             {
                 var attributes = methodSymbol.GetAttributes().Union(methodSymbol.ContainingType.GetAttributes());
 
-                if (!(attributes is null) && attributes.Any())
+                if (!(attributes is null) && attributes.Any(x => (x.AttributeClass.Name == "UmbracoVolatile" || x.AttributeClass.Name == "UmbracoVolatileAttribute")))
                 {
-                    if (attributes.Any(x => (x.AttributeClass.Name == "UmbracoVolatile" || x.AttributeClass.Name == "UmbracoVolatileAttribute")))
-                    {
-                        var assemblyAttributes = (context.ContainingSymbol as IMethodSymbol).ContainingAssembly.GetAttributes();
+                    var assemblyAttributes = (context.ContainingSymbol as IMethodSymbol).ContainingAssembly.GetAttributes();
 
-                        if (assemblyAttributes.Any(x => !(x is null) &&
-                        (x.AttributeClass.Name == "UmbracoSuppressVolatileAttribute" || x.AttributeClass.Name == "UmbracoSuppressVolatile")))
-                        {
-                            var diagnostic = Diagnostic.Create(WarningRule, invocationExpr.GetLocation(), methodSymbol.ToString());
-                            context.ReportDiagnostic(diagnostic);
-                        }
-                        else
-                        {
-                            var diagnostic = Diagnostic.Create(ErrorRule, invocationExpr.GetLocation(), methodSymbol.ToString());
-                            context.ReportDiagnostic(diagnostic);
-                        }
+                    if (assemblyAttributes.Any(x => !(x is null) &&
+                    (x.AttributeClass.Name == "UmbracoSuppressVolatileAttribute" || x.AttributeClass.Name == "UmbracoSuppressVolatile")))
+                    {
+                        var diagnostic = Diagnostic.Create(WarningRule, invocationExpr.GetLocation(), methodSymbol.ToString());
+                        context.ReportDiagnostic(diagnostic);
+                    }
+                    else
+                    {
+                        var diagnostic = Diagnostic.Create(ErrorRule, invocationExpr.GetLocation(), methodSymbol.ToString());
+                        context.ReportDiagnostic(diagnostic);
                     }
                 }
             }
