@@ -51,23 +51,20 @@ namespace Umbraco.Code.Volatile
 
                 if (!(attributes is null) && attributes.Any())
                 {
-                    foreach (var attribute in attributes)
+                    if (attributes.Any(x => (x.AttributeClass.Name == "UmbracoVolatile" || x.AttributeClass.Name == "UmbracoVolatileAttribute")))
                     {
-                        if (attribute.AttributeClass.Name == "UmbracoVolatile")
+                        var assemblyAttributes = (context.ContainingSymbol as IMethodSymbol).ContainingAssembly.GetAttributes();
+
+                        if (assemblyAttributes.Any(x => !(x is null) &&
+                        (x.AttributeClass.Name == "UmbracoSuppressVolatileAttribute" || x.AttributeClass.Name == "UmbracoSuppressVolatile")))
                         {
-                            var assemblyAttributes = (context.ContainingSymbol as IMethodSymbol).ContainingAssembly.GetAttributes();
-                            // Why is the "Attribute" part removed from normal attribute, but not assembly attribute? o.O 
-                            if (assemblyAttributes.Any(x => !(x is null) && x.AttributeClass.Name == "UmbracoSuppressVolatile"))
-                            {
-                                var diagnostic = Diagnostic.Create(WarningRule, invocationExpr.GetLocation(), methodSymbol.ToString());
-                                context.ReportDiagnostic(diagnostic);
-                            }
-                            else
-                            {
-                                var diagnostic = Diagnostic.Create(ErrorRule, invocationExpr.GetLocation(), methodSymbol.ToString());
-                                context.ReportDiagnostic(diagnostic);
-                            }
-                            
+                            var diagnostic = Diagnostic.Create(WarningRule, invocationExpr.GetLocation(), methodSymbol.ToString());
+                            context.ReportDiagnostic(diagnostic);
+                        }
+                        else
+                        {
+                            var diagnostic = Diagnostic.Create(ErrorRule, invocationExpr.GetLocation(), methodSymbol.ToString());
+                            context.ReportDiagnostic(diagnostic);
                         }
                     }
                 }
