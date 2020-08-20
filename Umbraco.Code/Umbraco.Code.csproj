@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <LangVersion>latest</LangVersion>
-    <Version>1.0.9</Version>
+    <Version>1.0.6</Version>
     <Authors>Umbraco HQ</Authors>
     <Company>Umbraco</Company>
     <PackageProjectUrl>https://github.com/umbraco/Umbraco-Code</PackageProjectUrl>

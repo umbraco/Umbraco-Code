@@ -296,7 +296,7 @@ namespace VolatileDemo
 
         public void NonVolatileMethod()
         {
-            Console.WriteLine(""No Dange"");
+            Console.WriteLine(""No Danger"");
         }
 
     }
