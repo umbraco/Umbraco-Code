@@ -17,7 +17,7 @@ namespace Umbraco.Code.Volatile
     {
         private const string DiagnosticId = "UmbracoCodeVolatile";
         private const string Category = "Access modifier";
-        private const string HelpLinkUri = "https://github.com/umbraco/Umbraco-Code"; // TODO: use actual helpful link
+        private const string HelpLinkUri = "https://our.umbraco.com/documentation/Reference/UmbracoVolatile/"; 
 
         private static readonly LocalizableString Title = "Umbraco Volatile method";
         private static readonly LocalizableString MessageFormat = "{0} is volatile";
