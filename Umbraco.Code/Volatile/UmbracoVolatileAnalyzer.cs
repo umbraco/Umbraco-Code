@@ -22,7 +22,7 @@ namespace Umbraco.Code.Volatile
         private static readonly LocalizableString Title = "Umbraco Volatile method";
         private static readonly LocalizableString MessageFormat = "{0} is volatile";
         private static readonly LocalizableString Description = "Method is volatile and may break in the future and it's therefore not recommended to use outside testing, " +
-                                                                "to suppress the error down to a warning, add UmbracoSupressVolatile as an assembly level attribute.";
+                                                                "to suppress the error down to a warning, add UmbracoSuppressVolatile as an assembly level attribute.";
 
         private static readonly DiagnosticDescriptor ErrorRule 
             = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category,
