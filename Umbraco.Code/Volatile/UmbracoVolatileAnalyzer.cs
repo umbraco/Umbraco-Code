@@ -43,7 +43,7 @@ namespace Umbraco.Code.Volatile
 
         private static void AnalyzeNode(SyntaxNodeAnalysisContext context)
         {
-// Get the method that is invoked as an expression
+            // Get the method that is invoked as an expression
             var invocationExpr = (InvocationExpressionSyntax)context.Node;
             
             // Ignore if we can't turn the invocationExpr into a method symbol allowing us to access it's attributes and containing class
