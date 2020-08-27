@@ -43,43 +43,56 @@ namespace Umbraco.Code.Volatile
 
         private static void AnalyzeNode(SyntaxNodeAnalysisContext context)
         {
-            // Get the method that is invoked as an expression
+// Get the method that is invoked as an expression
             var invocationExpr = (InvocationExpressionSyntax)context.Node;
-            // Turn it into a method symbol allowing us to access it's attributes and containing class.
-            var invokedMethodSymbol =
-                context.SemanticModel.GetSymbolInfo(invocationExpr, context.CancellationToken).Symbol as IMethodSymbol;
-            // The method from which the invoked method was invoked
-            var containingMethodSymbol = context.ContainingSymbol as IMethodSymbol;
-
-            if (!(invokedMethodSymbol is null))
+            
+            // Ignore if we can't turn the invocationExpr into a method symbol allowing us to access it's attributes and containing class
+            if (!(context.SemanticModel.GetSymbolInfo(invocationExpr, context.CancellationToken).Symbol is IMethodSymbol
+                invokedMethodSymbol))
             {
-                // Don't raise an error if the volatile method is used within its own class
-                if(!SymbolEqualityComparer.Default.Equals(invokedMethodSymbol.ContainingType, containingMethodSymbol.ContainingType))
-                {
-                    // Get the attributes from the invoked method and the class containing it.
-                    var attributes = invokedMethodSymbol.GetAttributes().Union(invokedMethodSymbol.ContainingType.GetAttributes());
-                    // Check if the method or its containing class is marked with the volatile attribute
-                    // the attribute is however only checked by name, meaning that's it's not nececary to use the attributes from this project. 
-                    if (!(attributes is null) && attributes.Any(x => (x.AttributeClass.Name == "UmbracoVolatile" || x.AttributeClass.Name == "UmbracoVolatileAttribute")))
-                    {
-                        // Get the assembly that the method was invoked from, and get all the attributes from that assembly.
-                        var assemblyAttributes = containingMethodSymbol.ContainingAssembly.GetAttributes();
+                return;
+            }
+            
+            // Ignore if we cant get the method from which the invoked method was invoked
+            if (!(context.ContainingSymbol is IMethodSymbol containingMethodSymbol))
+            {
+                return;
+            }
 
-                        // If the assembly has a SuppressVolatileAttribue issue a warning otherwise issue an error.
-                        if (assemblyAttributes.Any(x => !(x is null) &&
-                        (x.AttributeClass.Name == "UmbracoSuppressVolatileAttribute" || x.AttributeClass.Name == "UmbracoSuppressVolatile")))
-                        {
-                            var diagnostic = Diagnostic.Create(WarningRule, invocationExpr.GetLocation(), invokedMethodSymbol.ToString());
-                            context.ReportDiagnostic(diagnostic);
-                        }
-                        else
-                        {
-                            var diagnostic = Diagnostic.Create(ErrorRule, invocationExpr.GetLocation(), invokedMethodSymbol.ToString());
-                            context.ReportDiagnostic(diagnostic);
-                        }
-                    }
-                }
+            // Don't raise an error if the volatile method is used within its own class
+            if (SymbolEqualityComparer.Default.Equals(invokedMethodSymbol.ContainingType,
+                containingMethodSymbol.ContainingType))
+            {
+                return;
+            }
 
+            // Get the attributes from the invoked method and the class containing it.
+            var attributes = invokedMethodSymbol.GetAttributes().Union(invokedMethodSymbol.ContainingType.GetAttributes());
+            
+            // Ignore if the method or its containing class is NOT marked with the volatile attribute
+            // the attribute is however only checked by name, meaning that's it's not necessary to use the attributes from this project. 
+            if (!attributes.Any(x =>
+                (x.AttributeClass?.Name == "UmbracoVolatile" || x.AttributeClass?.Name == "UmbracoVolatileAttribute")))
+            {
+                return;
+            }
+            
+            // Get the assembly that the method was invoked from, and get all the attributes from that assembly.
+            var assemblyAttributes = containingMethodSymbol.ContainingAssembly.GetAttributes();
+
+            // If the assembly has a SuppressVolatileAttribute issue a warning otherwise issue an error.
+            var isReducedToWarning = assemblyAttributes.Any(x => !(x is null) &&
+                                                                 (x.AttributeClass?.Name ==
+                                                                  "UmbracoSuppressVolatile" ||
+                                                                  x.AttributeClass?.Name ==
+                                                                  "UmbracoSuppressVolatileAttribute"));
+            
+            var diagnostic = Diagnostic.Create(
+                isReducedToWarning ? WarningRule : ErrorRule,
+                invocationExpr.GetLocation(),
+                invokedMethodSymbol.ToString());
+            
+            context.ReportDiagnostic(diagnostic);
             }
         }
     }
