@@ -15,8 +15,8 @@ namespace Umbraco.Code.Volatile
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class UmbracoVolatileAnalyzer : DiagnosticAnalyzer
     {
-        public const string DiagnosticId = "UmbracoCodeVolatile";
-        public const string Category = "Access modifier";
+        private const string DiagnosticId = "UmbracoCodeVolatile";
+        private const string Category = "Access modifier";
         private const string HelpLinkUri = "https://github.com/umbraco/Umbraco-Code"; // TODO: use actual helpful link
 
         private static readonly LocalizableString Title = "Umbraco Volatile method";
