@@ -21,27 +21,55 @@ namespace Umbraco.Code.Volatile
 
         private static readonly LocalizableString Title = "Umbraco Volatile method";
         private static readonly LocalizableString MessageFormat = "{0} is volatile";
-        private static readonly LocalizableString Description = "Method is volatile and may break in the future and it's therefore not recommended to use outside testing, " +
-                                                                "to suppress the error down to a warning, add UmbracoSuppressVolatile as an assembly level attribute.";
+        private static readonly LocalizableString MethodDescription = "The method is volatile and may break in the future and it's therefore not recommended to use outside testing, " +
+                                                                      "to suppress the error down to a warning, add UmbracoSuppressVolatile as an assembly level attribute.";
+        private static readonly LocalizableString ClassDescription = "The class is volatile and may break in the future and it's therefore not recommended to use outside testing, " +
+                                                                     "to suppress the error down to a warning, add UmbracoSuppressVolatile as an assembly level attribute.";
 
-        private static readonly DiagnosticDescriptor ErrorRule 
+        private static readonly DiagnosticDescriptor MethodErrorRule 
             = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category,
-                DiagnosticSeverity.Error, true, Description, HelpLinkUri);
-        private static readonly DiagnosticDescriptor WarningRule
+                DiagnosticSeverity.Error, true, MethodDescription, HelpLinkUri);
+        private static readonly DiagnosticDescriptor MethodWarningRule
             = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category,
-                DiagnosticSeverity.Warning, true, Description, HelpLinkUri);
+                DiagnosticSeverity.Warning, true, MethodDescription, HelpLinkUri);
+        
+        private static readonly DiagnosticDescriptor ClassErrorRule 
+            = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, 
+                DiagnosticSeverity.Error, true, ClassDescription, HelpLinkUri);
+        private static readonly DiagnosticDescriptor ClassWarningRule 
+            = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, 
+                DiagnosticSeverity.Warning, true, ClassDescription, HelpLinkUri);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(ErrorRule, WarningRule);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(MethodErrorRule, MethodWarningRule, ClassErrorRule, ClassWarningRule);
 
         public override void Initialize(AnalysisContext context)
         {
             // Since the analyzer doesn't read or write anything it's safe to run it concurrently.
             context.EnableConcurrentExecution();
             // Analyze methods that are invoked (InvocationExpression)
-            context.RegisterSyntaxNodeAction(AnalyzeNode, SyntaxKind.InvocationExpression);
+            context.RegisterSyntaxNodeAction(AnalyzeMethodInvocation, SyntaxKind.InvocationExpression);
+            context.RegisterSyntaxNodeAction(AnalyzeConstructorInvocation, SyntaxKind.ObjectCreationExpression);
         }
 
-        private static void AnalyzeNode(SyntaxNodeAnalysisContext context)
+        private static bool HasSuppressAttribute(IAssemblySymbol assemblySymbol)
+        {
+            // Get the assembly that the method was invoked from, and get all the attributes from that assembly.
+            var assemblyAttributes = assemblySymbol.GetAttributes();
+
+            // If the assembly has a SuppressVolatileAttribute issue a warning otherwise issue an error.
+            return assemblyAttributes.Any(x => !(x is null) && 
+                                               (x.AttributeClass?.Name == "UmbracoSuppressVolatile" || 
+                                                x.AttributeClass?.Name == "UmbracoSuppressVolatileAttribute"));
+            
+        }
+
+        private static bool HasVolatileAttribute(IEnumerable<AttributeData> attributes)
+        {
+            return attributes.Any(a =>
+                a.AttributeClass?.Name == "UmbracoVolatile" || a.AttributeClass?.Name == "UmbracoVolatileAttribute");
+        }
+
+        private static void AnalyzeMethodInvocation(SyntaxNodeAnalysisContext context)
         {
             // Get the method that is invoked as an expression
             var invocationExpr = (InvocationExpressionSyntax)context.Node;
@@ -71,28 +99,44 @@ namespace Umbraco.Code.Volatile
             
             // Ignore if the method or its containing class is NOT marked with the volatile attribute
             // the attribute is however only checked by name, meaning that's it's not necessary to use the attributes from this project. 
-            if (!attributes.Any(x =>
-                (x.AttributeClass?.Name == "UmbracoVolatile" || x.AttributeClass?.Name == "UmbracoVolatileAttribute")))
+            if (!HasVolatileAttribute(attributes))
             {
                 return;
             }
-            
-            // Get the assembly that the method was invoked from, and get all the attributes from that assembly.
-            var assemblyAttributes = containingMethodSymbol.ContainingAssembly.GetAttributes();
 
             // If the assembly has a SuppressVolatileAttribute issue a warning otherwise issue an error.
-            var isReducedToWarning = assemblyAttributes.Any(x => !(x is null) &&
-                                                                 (x.AttributeClass?.Name ==
-                                                                  "UmbracoSuppressVolatile" ||
-                                                                  x.AttributeClass?.Name ==
-                                                                  "UmbracoSuppressVolatileAttribute"));
+            var isReducedToWarning = HasSuppressAttribute(containingMethodSymbol.ContainingAssembly);
             
             var diagnostic = Diagnostic.Create(
-                isReducedToWarning ? WarningRule : ErrorRule,
+                isReducedToWarning ? MethodWarningRule : MethodErrorRule,
                 invocationExpr.GetLocation(),
                 invokedMethodSymbol.ToString());
             
             context.ReportDiagnostic(diagnostic);
             }
+
+        private static void AnalyzeConstructorInvocation(SyntaxNodeAnalysisContext context)
+        {
+            var objectCreation = (ObjectCreationExpressionSyntax) context.Node;
+
+            var symbolInfo = context.SemanticModel.GetSymbolInfo(objectCreation.Type, context.CancellationToken).Symbol as INamedTypeSymbol;
+            // If we can't get the object creation as INamedTypeSymbol just ignore it
+            if (symbolInfo is null) return;
+
+            // If the class is not marked by a volatile attribute throw no error
+            if (!HasVolatileAttribute(symbolInfo.GetAttributes()))
+            {
+                return;
+            }
+
+            var isReducedToWarning = HasSuppressAttribute(symbolInfo.ContainingAssembly);
+            
+            var diagnostic = Diagnostic.Create(
+                isReducedToWarning ? ClassWarningRule : ClassErrorRule, 
+                objectCreation.GetLocation(), 
+                $"{symbolInfo.ContainingNamespace.Name}.{symbolInfo.Name}");
+            
+            context.ReportDiagnostic(diagnostic);
         }
     }
+}

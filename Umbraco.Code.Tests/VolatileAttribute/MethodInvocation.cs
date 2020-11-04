@@ -1,16 +1,13 @@
-﻿using System.Collections.Generic;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CodeFixes;
+﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Umbraco.Code.MapAll;
 using Umbraco.Code.Tests.Verifiers;
 using Umbraco.Code.Volatile;
 
-namespace Umbraco.Code.Tests
+namespace Umbraco.Code.Tests.VolatileAttribute
 {
     [TestClass]
-    public class VolatileTests : CodeFixVerifier
+    public class MethodInvocation : CodeFixVerifier
     {
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
@@ -44,12 +41,22 @@ namespace VolatileDemo
 }
 ";
 
-            var expected = new DiagnosticResult
+            var expected = new[]
             {
-                Id = "UmbracoCodeVolatile",
-                Message = "VolatileDemo.DemoClass.VolatileMethod() is volatile",
-                Severity = DiagnosticSeverity.Error,
-                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 19, 13) }
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.DemoClass is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new []{ new DiagnosticResultLocation("Test0.cs", 18, 29) }
+                },
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.DemoClass.VolatileMethod() is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 19, 13)}
+                }
             };
 
             VerifyCSharpDiagnostic(code, expected);
@@ -87,7 +94,7 @@ namespace VolatileDemo
                 Id = "UmbracoCodeVolatile",
                 Message = "VolatileDemo.DemoClass.VolatileMethod() is volatile",
                 Severity = DiagnosticSeverity.Error,
-                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 19, 13) }
+                Locations = new[] {new DiagnosticResultLocation("Test0.cs", 19, 13)}
             };
 
             VerifyCSharpDiagnostic(code, expected);
@@ -184,12 +191,22 @@ namespace VolatileDemo
 }
 ";
 
-            var expected = new DiagnosticResult
+            var expected = new[]
             {
-                Id = "UmbracoCodeVolatile",
-                Message = "VolatileDemo.DemoClass.VolatileMethod() is volatile",
-                Severity = DiagnosticSeverity.Warning,
-                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 20, 13) }
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.DemoClass is volatile",
+                    Severity = DiagnosticSeverity.Warning,
+                    Locations = new []{ new DiagnosticResultLocation("Test0.cs", 19, 29) }
+                },
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.DemoClass.VolatileMethod() is volatile",
+                    Severity = DiagnosticSeverity.Warning,
+                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 20, 13)}
+                }
             };
 
             VerifyCSharpDiagnostic(code, expected);
@@ -363,45 +380,6 @@ namespace VolatileDemo
             VolatileMethod();
         }
 
-    }
-}";
-
-            VerifyCSharpDiagnostic(code);
-        }
-
-
-        [TestMethod]
-        public void NoErrorFromInherentedNonVolatileParrent()
-        {
-            const string code = @"
-namespace VolatileDemo
-{
-    public class NonVolatileParrent
-    {
-        public void NonVolatileMethod()
-        {
-
-        }
-    }
-
-    [UmbracoVolatile]
-    public class DemoClass : NonVolatileParrent
-    {   
-        
-        public void VolatileMethod()
-        {
-            Console.WriteLine(""!!!Danger to manifold!!!"");
-        }
-
-    }
-
-    public class Consumer
-    {
-        public void testMethod()
-        {
-            var testClass = new DemoClass();
-            testClass.NonVolatileMethod();    
-        }
     }
 }";
 
