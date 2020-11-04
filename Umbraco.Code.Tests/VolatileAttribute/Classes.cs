@@ -94,5 +94,62 @@ namespace VolatileDemo
 ";
             VerifyCSharpDiagnostic(code);
         }
+
+        [TestMethod]
+        public void InheritVolatileClass()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    [UmbracoVolatile]
+    public class DemoClass
+    {}
+
+    public class DemoClass2 : DemoClass
+    {}
+}
+";
+            var expected = new DiagnosticResult
+            {
+                Id = "UmbracoCodeVolatile",
+                Message = "VolatileDemo.DemoClass is volatile",
+                Severity = DiagnosticSeverity.Error,
+                Locations = new []{ new DiagnosticResultLocation("Test0.cs", 8, 5) }
+            };
+            
+            VerifyCSharpDiagnostic(code, expected);
+        }
+        
+        [TestMethod]
+        public void InheritFromClassInheritingVolatile()
+        {
+            // Right now you are allowed to inherit a class, that in turn inherits from a volatile class
+            // However, if you try to access q method from the volatile base class you get the error
+            // See ErrorFromInheritedVolatileOnSelf tests to see an example
+            const string code = @"
+namespace VolatileDemo
+{
+    [UmbracoVolatile]
+    public class DemoClass
+    {}
+
+    public class DemoClass2 : DemoClass
+    {}
+
+    public class DemoClass3 : DemoClass2
+    {}
+}
+";
+            // Error at: public class DemoClass2 : DemoClass
+            var expected = new DiagnosticResult
+            {
+                Id = "UmbracoCodeVolatile",
+                Message = "VolatileDemo.DemoClass is volatile",
+                Severity = DiagnosticSeverity.Error,
+                Locations = new []{ new DiagnosticResultLocation("Test0.cs", 8, 5) }
+            };
+            
+            VerifyCSharpDiagnostic(code, expected);
+        }
     }
 }

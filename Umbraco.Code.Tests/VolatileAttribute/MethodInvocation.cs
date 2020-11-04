@@ -213,7 +213,7 @@ namespace VolatileDemo
         }
 
         [TestMethod]
-        public void ErrorFromInheretedVolatile()
+        public void ErrorFromInheritedVolatile()
         {
             const string code = @"
 namespace VolatileDemo
@@ -228,7 +228,7 @@ namespace VolatileDemo
 
     }
 
-    public class InheretedVolatile : DemoClass
+    public class InheritedVolatile : DemoClass
     {
 
     }
@@ -237,18 +237,79 @@ namespace VolatileDemo
     {
         public void Test()
         {
-            var testClass = new InheretedVolatile();
+            var testClass = new InheritedVolatile();
             testClass.VolatileMethod();
         }
     }
 }";
 
-            var expected = new DiagnosticResult
+            var expected = new[]
             {
-                Id = "UmbracoCodeVolatile",
-                Message = "VolatileDemo.DemoClass.VolatileMethod() is volatile",
-                Severity = DiagnosticSeverity.Error,
-                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 24, 13) }
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.DemoClass is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new []{ new DiagnosticResultLocation("Test0.cs", 14, 5) }
+                },
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.DemoClass.VolatileMethod() is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 24, 13)}
+                }
+            };
+
+            VerifyCSharpDiagnostic(code, expected);
+        }
+        
+        [TestMethod]
+        public void ErrorFromInheritedVolatileOnSelf()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    [UmbracoVolatile]
+    public class DemoClass
+    {
+        public void VolatileMethod()
+        {
+            Console.WriteLine(""!!!Danger to manifold!!!"");
+        }
+
+    }
+
+    public class InheritedVolatile : DemoClass
+    {
+
+    }
+
+    public class DemoClass2 : InheritedVolatile
+    {
+        public void Test()
+        {
+            VolatileMethod();
+        }
+    }
+}";
+
+            var expected = new[]
+            {
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.DemoClass is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new []{ new DiagnosticResultLocation("Test0.cs", 14, 5) }
+                },
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.DemoClass.VolatileMethod() is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 23, 13)}
+                }
             };
 
             VerifyCSharpDiagnostic(code, expected);
@@ -256,7 +317,7 @@ namespace VolatileDemo
 
 
         [TestMethod]
-        public void ErrorFromInheretedVolatileMethod()
+        public void ErrorFromInheritedVolatileMethod()
         {
             const string code = @"
 namespace VolatileDemo
@@ -271,7 +332,7 @@ namespace VolatileDemo
 
     }
 
-    public class InheretedVolatile : DemoClass
+    public class InheritedVolatile : DemoClass
     {
 
     }
@@ -280,7 +341,7 @@ namespace VolatileDemo
     {
         public void Test()
         {
-            var testClass = new InheretedVolatile();
+            var testClass = new InheritedVolatile();
             testClass.VolatileMethod();
         }
     }
@@ -318,7 +379,7 @@ namespace VolatileDemo
 
     }
 
-    public class InheretedVolatile : DemoClass
+    public class InheritedVolatile : DemoClass
     {
 
     }
@@ -327,7 +388,7 @@ namespace VolatileDemo
     {
         public void Test()
         {
-            var testClass = new InheretedVolatile();
+            var testClass = new InheritedVolatile();
             testClass.NonVolatileMethod();
         }
     }

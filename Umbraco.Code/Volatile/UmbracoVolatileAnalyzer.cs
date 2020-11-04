@@ -48,7 +48,10 @@ namespace Umbraco.Code.Volatile
             context.EnableConcurrentExecution();
             // Analyze methods that are invoked (InvocationExpression)
             context.RegisterSyntaxNodeAction(AnalyzeMethodInvocation, SyntaxKind.InvocationExpression);
+            // Analyze constructors that are invoked (ObjectCreationExpression)
             context.RegisterSyntaxNodeAction(AnalyzeConstructorInvocation, SyntaxKind.ObjectCreationExpression);
+            // Analyze classes that are declared (ClassDeclaration)
+            context.RegisterSyntaxNodeAction(AnalyzeClassDeclaration, SyntaxKind.ClassDeclaration);
         }
 
         private static bool HasSuppressAttribute(IAssemblySymbol assemblySymbol)
@@ -135,6 +138,29 @@ namespace Umbraco.Code.Volatile
                 isReducedToWarning ? ClassWarningRule : ClassErrorRule, 
                 objectCreation.GetLocation(), 
                 $"{symbolInfo.ContainingNamespace.Name}.{symbolInfo.Name}");
+            
+            context.ReportDiagnostic(diagnostic);
+        }
+
+        private static void AnalyzeClassDeclaration(SyntaxNodeAnalysisContext context)
+        {
+            var classDeclaration = (ClassDeclarationSyntax) context.Node;
+
+            var symbolInfo = context.SemanticModel.GetDeclaredSymbol(classDeclaration);
+
+            var baseTypeSymbolInfo = symbolInfo?.BaseType;
+            // If there is no inheritance, or symbolInfo does not exist, throw no error
+            if(baseTypeSymbolInfo is null) return;
+            
+            // If inheritance is not marked as volatile, just return
+            if(!HasVolatileAttribute(baseTypeSymbolInfo.GetAttributes())) return;
+
+            var isReducedToWarning = HasSuppressAttribute(symbolInfo.ContainingAssembly);
+            
+            var diagnostic = Diagnostic.Create(
+                isReducedToWarning ? ClassWarningRule : ClassErrorRule, 
+                classDeclaration.GetLocation(), 
+                $"{baseTypeSymbolInfo.ContainingNamespace.Name}.{baseTypeSymbolInfo.Name}");
             
             context.ReportDiagnostic(diagnostic);
         }
