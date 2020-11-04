@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Operations;
 
 
 namespace Umbraco.Code.Volatile
@@ -52,6 +53,12 @@ namespace Umbraco.Code.Volatile
             context.RegisterSyntaxNodeAction(AnalyzeConstructorInvocation, SyntaxKind.ObjectCreationExpression);
             // Analyze classes that are declared (ClassDeclaration)
             context.RegisterSyntaxNodeAction(AnalyzeClassDeclaration, SyntaxKind.ClassDeclaration);
+            var propertyAndFieldKinds = new[]
+            {
+                SyntaxKind.SimpleMemberAccessExpression,
+                SyntaxKind.PointerMemberAccessExpression
+            };
+            context.RegisterSyntaxNodeAction(AnalyzeFieldAndProperties, propertyAndFieldKinds);
         }
 
         private static bool HasSuppressAttribute(IAssemblySymbol assemblySymbol)
@@ -164,5 +171,12 @@ namespace Umbraco.Code.Volatile
             
             context.ReportDiagnostic(diagnostic);
         }
+
+        private static void AnalyzeFieldAndProperties(SyntaxNodeAnalysisContext context)
+        { 
+            var accessExpression = (MemberAccessExpressionSyntax) context.Node;
+            var symbolInfo = context.SemanticModel.GetSymbolInfo(accessExpression.Name, context.CancellationToken);
+        }
+        
     }
 }
