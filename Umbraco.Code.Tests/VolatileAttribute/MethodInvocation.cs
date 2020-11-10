@@ -446,5 +446,44 @@ namespace VolatileDemo
 
             VerifyCSharpDiagnostic(code);
         }
+        
+        
+        [TestMethod]
+        public void VolatileMethodInConstructor()
+        {
+            // Just making sure that a constructor is also considered a method symbol.
+            const string code = @"
+namespace VolatileDemo
+{
+    public static class DemoClass
+    {
+        [UmbracoVolatile]
+        public static void VolatileMethod()
+        {
+            Console.WriteLine(""!!!Danger to manifold!!!"");
+        }
+
+    }
+
+    public class DemoClass2
+    {
+        public DemoClass2()
+        {
+            DemoClass.VolatileMethod();
+        }
+    }
+}
+";
+
+            var expected = new DiagnosticResult
+            {
+                Id = "UmbracoCodeVolatile",
+                Message = "VolatileDemo.DemoClass.VolatileMethod() is volatile",
+                Severity = DiagnosticSeverity.Error,
+                Locations = new[] {new DiagnosticResultLocation("Test0.cs", 18, 13)}
+            };
+
+            VerifyCSharpDiagnostic(code, expected);
+        }
     }
 }

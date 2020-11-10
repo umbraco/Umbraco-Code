@@ -2,13 +2,10 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Operations;
 
 
 namespace Umbraco.Code.Volatile
@@ -20,11 +17,13 @@ namespace Umbraco.Code.Volatile
         private const string Category = "Access modifier";
         private const string HelpLinkUri = "https://our.umbraco.com/documentation/Reference/UmbracoVolatile/"; 
 
-        private static readonly LocalizableString Title = "Umbraco Volatile method";
+        private static readonly LocalizableString Title = "Umbraco Volatile";
         private static readonly LocalizableString MessageFormat = "{0} is volatile";
         private static readonly LocalizableString MethodDescription = "The method is volatile and may break in the future and it's therefore not recommended to use outside testing, " +
                                                                       "to suppress the error down to a warning, add UmbracoSuppressVolatile as an assembly level attribute.";
         private static readonly LocalizableString ClassDescription = "The class is volatile and may break in the future and it's therefore not recommended to use outside testing, " +
+                                                                     "to suppress the error down to a warning, add UmbracoSuppressVolatile as an assembly level attribute.";
+        private static readonly LocalizableString MemberDescription = "The member is volatile and may break in the future and it's therefore not recommended to use outside testing, " +
                                                                      "to suppress the error down to a warning, add UmbracoSuppressVolatile as an assembly level attribute.";
 
         private static readonly DiagnosticDescriptor MethodErrorRule 
@@ -40,6 +39,13 @@ namespace Umbraco.Code.Volatile
         private static readonly DiagnosticDescriptor ClassWarningRule 
             = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, 
                 DiagnosticSeverity.Warning, true, ClassDescription, HelpLinkUri);
+        
+        private static readonly DiagnosticDescriptor MemberErrorRule 
+            = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, 
+                DiagnosticSeverity.Error, true, MemberDescription, HelpLinkUri);
+        private static readonly DiagnosticDescriptor MemberWarningRule 
+            = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, 
+                DiagnosticSeverity.Warning, true, MemberDescription, HelpLinkUri);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(MethodErrorRule, MethodWarningRule, ClassErrorRule, ClassWarningRule);
 
@@ -53,6 +59,7 @@ namespace Umbraco.Code.Volatile
             context.RegisterSyntaxNodeAction(AnalyzeConstructorInvocation, SyntaxKind.ObjectCreationExpression);
             // Analyze classes that are declared (ClassDeclaration)
             context.RegisterSyntaxNodeAction(AnalyzeClassDeclaration, SyntaxKind.ClassDeclaration);
+            // Analyze fields and properties that are accessed.
             var propertyAndFieldKinds = new[]
             {
                 SyntaxKind.SimpleMemberAccessExpression,
@@ -175,7 +182,37 @@ namespace Umbraco.Code.Volatile
         private static void AnalyzeFieldAndProperties(SyntaxNodeAnalysisContext context)
         { 
             var accessExpression = (MemberAccessExpressionSyntax) context.Node;
-            var symbolInfo = context.SemanticModel.GetSymbolInfo(accessExpression.Name, context.CancellationToken);
+            
+            var symbol = context.SemanticModel.GetSymbolInfo(accessExpression, context.CancellationToken).Symbol;
+
+            // If no symbol was found, return
+            if (symbol is null) return;
+
+            // We only want to check on IFieldSymbol and IPropertySymbol, not method symbols and so on.
+            if (!(symbol is IFieldSymbol || symbol is IPropertySymbol)) return;
+
+            // We check if there is a containing symbol of the context, if there isn't it's safe to assume that 
+            // the volatile member has not been accessed from within its own class.
+            // If there is a containing symbol we check if its type is the same as the members type, if it is we return. 
+            if (context.ContainingSymbol != null && 
+                SymbolEqualityComparer.Default.Equals(symbol.ContainingType, 
+                context.ContainingSymbol.ContainingType))
+            {
+                return;
+            }
+
+            // Get attributes from both the member and the class containing it.
+            var attributes = symbol.GetAttributes().Union(symbol.ContainingType.GetAttributes());
+            // Stop analysis if no volatile attribute is found.
+            if (!HasVolatileAttribute(attributes)) return;
+
+            var isReducedToWarning = HasSuppressAttribute(symbol.ContainingAssembly);
+
+            var diagnostic = Diagnostic.Create(
+                isReducedToWarning ? MemberWarningRule : MemberErrorRule, 
+                accessExpression.GetLocation(),
+                $"{symbol.ContainingNamespace.Name}.{symbol.ContainingType.Name}.{symbol.Name}");
+            context.ReportDiagnostic(diagnostic);
         }
         
     }

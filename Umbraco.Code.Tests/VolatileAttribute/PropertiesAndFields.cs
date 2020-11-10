@@ -31,8 +31,8 @@ namespace VolatileDemo
         public void Test()
         {
             var testClass = new DemoClass();
-            DemoClass.VolatileProperty = ""Volatile text""
-            var test = DemoClass.VolatileProperty;
+            testClass.VolatileProperty = ""Volatile text"";
+            var test = testClass.VolatileProperty;
         }
     }
 }
@@ -45,8 +45,50 @@ namespace VolatileDemo
                     Id = "UmbracoCodeVolatile",
                     Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
                     Severity = DiagnosticSeverity.Error,
-                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 19, 13)}
+                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 15, 13)}
+                },
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 16, 24)}
                 }
+            };
+
+            VerifyCSharpDiagnostic(code, expected);
+        }
+        
+        [TestMethod]
+        public void EnsureWarnWhenSuppressed()
+        {
+            const string code = @"
+[assembly: UmbracoSuppressVolatile]
+namespace VolatileDemo
+{
+    public class DemoClass
+    {
+        [UmbracoVolatile]
+        public string VolatileProperty {get; set;}
+    }
+
+    public class DemoClass2
+    {
+        public void Test()
+        {
+            var testClass = new DemoClass();
+            testClass.VolatileProperty = ""Volatile text"";
+        }
+    }
+}
+";
+
+            var expected = new DiagnosticResult
+            {
+                Id = "UmbracoCodeVolatile",
+                Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
+                Severity = DiagnosticSeverity.Warning,
+                Locations = new[] {new DiagnosticResultLocation("Test0.cs", 16, 13)}
             };
 
             VerifyCSharpDiagnostic(code, expected);
@@ -68,8 +110,8 @@ namespace VolatileDemo
         public void Test()
         {
             var testClass = new DemoClass();
-            DemoClass.VolatileProperty = ""Volatile text""
-            var test = DemoClass.VolatileProperty;
+            testClass.VolatileProperty = ""Volatile text"";
+            var test = testClass.VolatileProperty;
         }
     }
 }
@@ -86,7 +128,7 @@ namespace VolatileDemo
     public class DemoClass
     {
         [UmbracoVolatile]
-        public string VolatileProperty = ""Field text""
+        public string VolatileProperty = ""Field text"";
     }
 
     public class DemoClass2
@@ -94,7 +136,76 @@ namespace VolatileDemo
         public void Test()
         {
             var testClass = new DemoClass();
-            DemoClass.VolatileProperty = ""Volatile text""
+            testClass.VolatileProperty = ""Volatile text"";
+            var test = testClass.VolatileProperty;
+        }
+    }
+}
+";
+
+            var expected = new[]
+            {
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 15, 13)}
+                },
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 16, 24)}
+                }
+            };
+
+            VerifyCSharpDiagnostic(code, expected);
+        }
+
+        [TestMethod]
+        public void GetSetNonVolatileField()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    public class DemoClass
+    {
+        public string VolatileProperty = ""Field text"";
+    }
+
+    public class DemoClass2
+    {
+        public void Test()
+        {
+            var testClass = new DemoClass();
+            testClass.VolatileProperty = ""Volatile text"";
+            var test = testClass.VolatileProperty;
+        }
+    }
+}
+";
+            VerifyCSharpDiagnostic(code);
+        }
+        
+        [TestMethod]
+        public void GetSetPropertyFromVolatileClass()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    [UmbracoVolatile]
+    public static class DemoClass
+    { 
+        public static string VolatileProperty {get; set;}
+    }
+
+    public class DemoClass2
+    {
+        public void Test()
+        {
+            DemoClass.VolatileProperty = ""Volatile text"";
             var test = DemoClass.VolatileProperty;
         }
     }
@@ -108,22 +219,54 @@ namespace VolatileDemo
                     Id = "UmbracoCodeVolatile",
                     Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
                     Severity = DiagnosticSeverity.Error,
-                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 19, 13)}
+                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 14, 13)}
+                },
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 15, 24)}
                 }
             };
 
             VerifyCSharpDiagnostic(code, expected);
         }
-
+        
         [TestMethod]
-        public void NonVolatileField()
+        public void GetSetVolatilePropertyFromOwnClass()
         {
             const string code = @"
 namespace VolatileDemo
 {
     public class DemoClass
     {
-        public string VolatileProperty = ""Field text""
+        [UmbracoVolatile]
+        public string VolatileProperty {get; set;}
+
+        public void Test()
+        {
+            this.VolatileProperty = ""Volatile text"";
+            var test = this.VolatileProperty;
+        }
+    }
+}
+";
+            VerifyCSharpDiagnostic(code);
+        }
+        
+        [TestMethod]
+        public void GetSetVolatileFieldWithClass()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    public class PropertyClass{}
+
+    public class DemoClass
+    {
+        [UmbracoVolatile]
+        public PropertyClass VolatileProperty;
     }
 
     public class DemoClass2
@@ -131,13 +274,68 @@ namespace VolatileDemo
         public void Test()
         {
             var testClass = new DemoClass();
-            DemoClass.VolatileProperty = ""Volatile text""
-            var test = DemoClass.VolatileProperty;
+            testClass.VolatileProperty = new PropertyClass();
+            var test = testClass.VolatileProperty;
         }
     }
 }
 ";
-            VerifyCSharpDiagnostic(code);
+
+            var expected = new[]
+            {
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 17, 13)}
+                },
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 18, 24)}
+                }
+            };
+
+            VerifyCSharpDiagnostic(code, expected);
+        }
+        
+        [TestMethod]
+        public void GeVolatileExpressionBodyPropertyWithClass()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    public class PropertyClass{}
+
+    public class DemoClass
+    {
+        [UmbracoVolatile]
+        public PropertyClass VolatileProperty => new PropertyClass();
+    }
+
+    public class DemoClass2
+    {
+        public void Test()
+        {
+            var testClass = new DemoClass();
+            var test = testClass.VolatileProperty;
+        }
+    }
+}
+";
+
+            var expected = new DiagnosticResult
+            {
+                Id = "UmbracoCodeVolatile",
+                Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
+                Severity = DiagnosticSeverity.Error,
+                Locations = new[] {new DiagnosticResultLocation("Test0.cs", 17, 24)}
+            };
+
+            VerifyCSharpDiagnostic(code, expected);
         }
     }
 }
