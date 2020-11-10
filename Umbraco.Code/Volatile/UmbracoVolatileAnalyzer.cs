@@ -25,6 +25,8 @@ namespace Umbraco.Code.Volatile
                                                                      "to suppress the error down to a warning, add UmbracoSuppressVolatile as an assembly level attribute.";
         private static readonly LocalizableString MemberDescription = "The member is volatile and may break in the future and it's therefore not recommended to use outside testing, " +
                                                                      "to suppress the error down to a warning, add UmbracoSuppressVolatile as an assembly level attribute.";
+        private static readonly LocalizableString AttributeDescription = "The attribute is volatile and may break in the future and it's therefore not recommended to use outside testing, " +
+                                                                      "to suppress the error down to a warning, add UmbracoSuppressVolatile as an assembly level attribute.";
 
         private static readonly DiagnosticDescriptor MethodErrorRule 
             = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category,
@@ -46,13 +48,20 @@ namespace Umbraco.Code.Volatile
         private static readonly DiagnosticDescriptor MemberWarningRule 
             = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, 
                 DiagnosticSeverity.Warning, true, MemberDescription, HelpLinkUri);
+        
+        private static readonly DiagnosticDescriptor AttributeErrorRule 
+            = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, 
+                DiagnosticSeverity.Error, true, AttributeDescription, HelpLinkUri);
+        private static readonly DiagnosticDescriptor AttributeWarningRule 
+            = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, 
+                DiagnosticSeverity.Warning, true, AttributeDescription, HelpLinkUri);
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(MethodErrorRule, MethodWarningRule, ClassErrorRule, ClassWarningRule);
 
         public override void Initialize(AnalysisContext context)
         {
             // Since the analyzer doesn't read or write anything it's safe to run it concurrently.
-            context.EnableConcurrentExecution();
+            // context.EnableConcurrentExecution();
             // Analyze methods that are invoked (InvocationExpression)
             context.RegisterSyntaxNodeAction(AnalyzeMethodInvocation, SyntaxKind.InvocationExpression);
             // Analyze constructors that are invoked (ObjectCreationExpression)
@@ -66,6 +75,8 @@ namespace Umbraco.Code.Volatile
                 SyntaxKind.PointerMemberAccessExpression
             };
             context.RegisterSyntaxNodeAction(AnalyzeFieldAndProperties, propertyAndFieldKinds);
+            // Analyze when applying an attribute.
+            context.RegisterSyntaxNodeAction(AnalyzeAttributeList, SyntaxKind.AttributeList);
         }
 
         private static bool HasSuppressAttribute(IAssemblySymbol assemblySymbol)
@@ -212,6 +223,49 @@ namespace Umbraco.Code.Volatile
                 isReducedToWarning ? MemberWarningRule : MemberErrorRule, 
                 accessExpression.GetLocation(),
                 $"{symbol.ContainingNamespace.Name}.{symbol.ContainingType.Name}.{symbol.Name}");
+            context.ReportDiagnostic(diagnostic);
+        }
+        
+        private static void AnalyzeAttributeList(SyntaxNodeAnalysisContext context)
+        {
+            var attributeList = (AttributeListSyntax) context.Node;
+
+            ISymbol volatileAttribute = null;
+            // You can apply more than one attribute in an attribute list, so we have to check all of them
+            foreach (var attributeSyntax in attributeList.Attributes)
+            {
+                var attributeSymbol = context.SemanticModel.GetSymbolInfo(attributeSyntax, context.CancellationToken).Symbol;
+                // If we couldn't find the attribute symbol we just skip it.
+                if(attributeSymbol is null) continue;
+
+                // Attributes are a bit weird, the symbol the semantic model returns is a method symbol of the constructor
+                // So we have to get the containing type and check that for any UmbracoVolatileAttributes.
+                var attributes = attributeSymbol.ContainingType.GetAttributes();
+
+                if (HasVolatileAttribute(attributes))
+                {
+                    volatileAttribute = attributeSymbol.ContainingType;
+                    // As soon as we find an attribute which is volatile we break, to not spend unnecessary time on it.
+                    break;
+                }
+            }
+
+            // We found no volatile attributes, we can stop.
+            if (volatileAttribute is null) return;
+            
+            // Finding the assembly is a bit weird for attribute lists as well, since the syntax node specifies the 
+            // list it self, we can however use the containing symbol of the context, which should be a 
+            // Class declaration, method declaration etc.
+            var containingAssembly = context.ContainingSymbol?.ContainingAssembly;
+            // If we find no assembly we just return, this shouldn't happen however, since this would mean that 
+            // the attribute is essentially being applied to nothing.
+            if (containingAssembly is null) return;
+            var isReducedToWarning = HasSuppressAttribute(containingAssembly);
+
+            var diagnostic = Diagnostic.Create(
+                isReducedToWarning ? AttributeWarningRule : AttributeErrorRule,
+                attributeList.GetLocation(),
+                $"{volatileAttribute.ContainingNamespace.Name}.{volatileAttribute.Name}");
             context.ReportDiagnostic(diagnostic);
         }
         
