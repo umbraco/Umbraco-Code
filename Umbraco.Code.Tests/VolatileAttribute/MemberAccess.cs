@@ -303,7 +303,7 @@ namespace VolatileDemo
         }
         
         [TestMethod]
-        public void GeVolatileExpressionBodyPropertyWithClass()
+        public void GetVolatileExpressionBodyPropertyWithClass()
         {
             const string code = @"
 namespace VolatileDemo

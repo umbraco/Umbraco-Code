@@ -61,6 +61,7 @@ namespace Umbraco.Code.Volatile
         public override void Initialize(AnalysisContext context)
         {
             // Since the analyzer doesn't read or write anything it's safe to run it concurrently.
+            // TODO: Re enable concurrent execution, it's just a headache when debugging.
             // context.EnableConcurrentExecution();
             // Analyze methods that are invoked (InvocationExpression)
             context.RegisterSyntaxNodeAction(AnalyzeMethodInvocation, SyntaxKind.InvocationExpression);
@@ -77,7 +78,7 @@ namespace Umbraco.Code.Volatile
             context.RegisterSyntaxNodeAction(AnalyzeMemberAccess, propertyAndFieldKinds);
             // Analyze when applying an attribute.
             context.RegisterSyntaxNodeAction(AnalyzeAttributeList, SyntaxKind.AttributeList);
-            // Analyze when requesting parameters
+            // Analyze when requesting/passing parameters
             context.RegisterSyntaxNodeAction(AnalyzeParameter, SyntaxKind.Parameter);
         }
 
@@ -303,18 +304,9 @@ namespace Umbraco.Code.Volatile
             
             var parameterTypeSymbol = context.SemanticModel.GetSymbolInfo(parameterTypeSyntax, context.CancellationToken).Symbol;
             if (parameterTypeSymbol is null) return;
-            
-            var parameterTypeAttributes = parameterTypeSymbol.GetAttributes();
-            // We have to include the parameters of the containing type as well in case it's an non volatile class inside a volatile class
-            // However we can't just assume that the parameterTypeSymbol has a containing type, so we have to test for it first.
-            if (!(parameterTypeSymbol.ContainingType is null))
-            {
-                parameterTypeAttributes =
-                    parameterTypeAttributes.AddRange(parameterTypeSymbol.ContainingType.GetAttributes());
-            }
 
             // If it's not volatile we stop
-            if (!HasVolatileAttribute(parameterTypeAttributes)) return;
+            if (!HasVolatileAttribute(GetAllAttributes(parameterTypeSymbol))) return;
             
             // Since we don't already have the symbol for the parameter syntax we just use the same trick as in AnalyzeAttributeList
             var containingAssembly = context.ContainingSymbol?.ContainingAssembly;
