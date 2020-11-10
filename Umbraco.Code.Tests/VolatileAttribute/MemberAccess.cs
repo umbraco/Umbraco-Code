@@ -7,7 +7,7 @@ using Umbraco.Code.Volatile;
 namespace Umbraco.Code.Tests.VolatileAttribute
 {
     [TestClass]
-    public class PropertiesAndFields : CodeFixVerifier
+    public class MemberAccess : CodeFixVerifier
     {
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
@@ -335,6 +335,136 @@ namespace VolatileDemo
                 Locations = new[] {new DiagnosticResultLocation("Test0.cs", 17, 24)}
             };
 
+            VerifyCSharpDiagnostic(code, expected);
+        }
+        
+        [TestMethod]
+        public void SaveVolatileEnumToVariable()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    [UmbracoVolatile]
+    public enum TestEnum
+    {
+        Test,
+        AnotherTest
+    }
+
+    public class DemoClass2
+    {
+        public void Test()
+        {
+            var testState = TestEnum.Test;
+        }
+    }
+}
+";
+
+            var expected = new DiagnosticResult
+            {
+                Id = "UmbracoCodeVolatile",
+                Message = "VolatileDemo.TestEnum.Test is volatile",
+                Severity = DiagnosticSeverity.Error,
+                Locations = new[] {new DiagnosticResultLocation("Test0.cs", 15, 29)}
+            };
+            VerifyCSharpDiagnostic(code, expected);
+        }
+        
+        [TestMethod]
+        public void PassVolatileEnumToMethod()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    [UmbracoVolatile]
+    public enum TestEnum
+    {
+        Test,
+        AnotherTest
+    }
+
+    public class DemoClass
+    {
+        public void MethodReceivingEnum(TestEnum testEnum)
+        {
+        }
+
+        public void MethodPassingEnum()
+        {
+            MethodReceivingEnum(TestEnum.Test);
+        }
+    }
+}
+";
+
+            var expected = new []
+            {
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.TestEnum is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 13, 41)}
+                },
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.TestEnum.Test is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 19, 33)}
+                } 
+            };
+            VerifyCSharpDiagnostic(code, expected);
+        }
+        
+        [TestMethod]
+        public void VolatileClassWithEnum()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    [UmbracoVolatile]
+    public class VolatileClassWithEnum
+    {
+        public enum VolatileEnum
+        {
+            EntryOne,
+            EntryTwo
+        }
+    }
+
+    public class ClassConsumingEnum
+    {
+        public void MethodConsumingEnum(VolatileClassWithEnum.VolatileEnum volatileEnum)
+        {
+        }
+
+        public void MethodPassingEnum()
+        {
+            MethodConsumingEnum(VolatileClassWithEnum.VolatileEnum.EntryOne);
+        }
+    }
+}
+";
+
+            var expected = new[]
+            {
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.VolatileEnum is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 16, 41)}
+                },
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.VolatileEnum.EntryOne is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 22, 33)}
+                }
+            };
             VerifyCSharpDiagnostic(code, expected);
         }
     }

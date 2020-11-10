@@ -74,9 +74,11 @@ namespace Umbraco.Code.Volatile
                 SyntaxKind.SimpleMemberAccessExpression,
                 SyntaxKind.PointerMemberAccessExpression
             };
-            context.RegisterSyntaxNodeAction(AnalyzeFieldAndProperties, propertyAndFieldKinds);
+            context.RegisterSyntaxNodeAction(AnalyzeMemberAccess, propertyAndFieldKinds);
             // Analyze when applying an attribute.
             context.RegisterSyntaxNodeAction(AnalyzeAttributeList, SyntaxKind.AttributeList);
+            // Analyze when requesting parameters
+            context.RegisterSyntaxNodeAction(AnalyzeParameter, SyntaxKind.Parameter);
         }
 
         private static bool HasSuppressAttribute(IAssemblySymbol assemblySymbol)
@@ -95,6 +97,30 @@ namespace Umbraco.Code.Volatile
         {
             return attributes.Any(a =>
                 a.AttributeClass?.Name == "UmbracoVolatile" || a.AttributeClass?.Name == "UmbracoVolatileAttribute");
+        }
+        
+        /// <summary>
+        /// Gets all the attributes of the symbol, and any parent class of the symbol
+        /// </summary>
+        /// <remarks>
+        /// I'm a bit worried about the performance of this, however it's necessary since a volatile class can
+        /// have public child classes and enums which should in turn inherit the volatile status, so we have to look at
+        /// all of them
+        /// </remarks>
+        /// <param name="symbol">Symbol to get attributes from</param>
+        /// <returns>List of all attributes</returns>
+        private static ImmutableArray<AttributeData> GetAllAttributes(ISymbol symbol)
+        {
+            var attributes = symbol.GetAttributes();
+            var containingTypeSymbol = symbol.ContainingType;
+            while (!(containingTypeSymbol is null))
+            {
+                attributes = attributes.AddRange(containingTypeSymbol.GetAttributes());
+                // We set containingTypeSymbol to the ContainingType of the containingTypeSymbol to "step out" once
+                containingTypeSymbol = containingTypeSymbol.ContainingType;
+            }
+
+            return attributes;
         }
 
         private static void AnalyzeMethodInvocation(SyntaxNodeAnalysisContext context)
@@ -190,7 +216,7 @@ namespace Umbraco.Code.Volatile
             context.ReportDiagnostic(diagnostic);
         }
 
-        private static void AnalyzeFieldAndProperties(SyntaxNodeAnalysisContext context)
+        private static void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context)
         { 
             var accessExpression = (MemberAccessExpressionSyntax) context.Node;
             
@@ -212,10 +238,8 @@ namespace Umbraco.Code.Volatile
                 return;
             }
 
-            // Get attributes from both the member and the class containing it.
-            var attributes = symbol.GetAttributes().Union(symbol.ContainingType.GetAttributes());
             // Stop analysis if no volatile attribute is found.
-            if (!HasVolatileAttribute(attributes)) return;
+            if (!HasVolatileAttribute(GetAllAttributes(symbol))) return;
 
             var isReducedToWarning = HasSuppressAttribute(symbol.ContainingAssembly);
 
@@ -225,7 +249,7 @@ namespace Umbraco.Code.Volatile
                 $"{symbol.ContainingNamespace.Name}.{symbol.ContainingType.Name}.{symbol.Name}");
             context.ReportDiagnostic(diagnostic);
         }
-        
+
         private static void AnalyzeAttributeList(SyntaxNodeAnalysisContext context)
         {
             var attributeList = (AttributeListSyntax) context.Node;
@@ -267,6 +291,42 @@ namespace Umbraco.Code.Volatile
                 attributeList.GetLocation(),
                 $"{volatileAttribute.ContainingNamespace.Name}.{volatileAttribute.Name}");
             context.ReportDiagnostic(diagnostic);
+        }
+        
+        private static void AnalyzeParameter(SyntaxNodeAnalysisContext context)
+        {
+            var parameterSyntax = (ParameterSyntax) context.Node;
+
+            // We try and get the type of the parameter as a symbol to see if it's volatile, if we can't we stop analysis
+            var parameterTypeSyntax = parameterSyntax.Type;
+            if (parameterTypeSyntax is null) return;
+            
+            var parameterTypeSymbol = context.SemanticModel.GetSymbolInfo(parameterTypeSyntax, context.CancellationToken).Symbol;
+            if (parameterTypeSymbol is null) return;
+            
+            var parameterTypeAttributes = parameterTypeSymbol.GetAttributes();
+            // We have to include the parameters of the containing type as well in case it's an non volatile class inside a volatile class
+            // However we can't just assume that the parameterTypeSymbol has a containing type, so we have to test for it first.
+            if (!(parameterTypeSymbol.ContainingType is null))
+            {
+                parameterTypeAttributes =
+                    parameterTypeAttributes.AddRange(parameterTypeSymbol.ContainingType.GetAttributes());
+            }
+
+            // If it's not volatile we stop
+            if (!HasVolatileAttribute(parameterTypeAttributes)) return;
+            
+            // Since we don't already have the symbol for the parameter syntax we just use the same trick as in AnalyzeAttributeList
+            var containingAssembly = context.ContainingSymbol?.ContainingAssembly;
+            if (containingAssembly is null) return;
+            var isReducedToWarning = HasSuppressAttribute(containingAssembly);
+
+            // TODO: Create error rule for parameters, or just use a generic one, it's getting out of hand with the amount of error rules...
+            var diagnostics = Diagnostic.Create(
+                isReducedToWarning ? ClassWarningRule : ClassErrorRule,
+                parameterSyntax.GetLocation(),
+                $"{parameterTypeSymbol.ContainingNamespace}.{parameterTypeSymbol.Name}");
+            context.ReportDiagnostic(diagnostics);
         }
         
     }

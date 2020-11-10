@@ -208,5 +208,65 @@ namespace VolatileDemo
             
             VerifyCSharpDiagnostic(code, expected);
         }
+        
+        [TestMethod]
+        public void RequestVolatileClassAsParameter()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    [UmbracoVolatile]
+    public class DemoClass
+    {}
+
+    public class DemoClass2
+    {
+        public void Test(DemoClass volatileClass)
+        {
+        }
+    }
+}
+";
+            var expected = new DiagnosticResult
+            {
+                Id = "UmbracoCodeVolatile",
+                Message = "VolatileDemo.DemoClass is volatile",
+                Severity = DiagnosticSeverity.Error,
+                Locations = new []{ new DiagnosticResultLocation("Test0.cs", 10, 26) }
+            };
+            
+            VerifyCSharpDiagnostic(code, expected);
+        }
+        
+        // TODO: move all tests related to passing something as a parameter into separate test fixture
+        [TestMethod]
+        public void EnsureWarningWhenSuppressedVolatileClassAsParameter()
+        {
+            const string code = @"
+[assembly: UmbracoSuppressVolatile]
+namespace VolatileDemo
+{
+    [UmbracoVolatile]
+    public class DemoClass
+    {}
+
+    public class DemoClass2
+    {
+        public void Test(DemoClass volatileClass)
+        {
+        }
+    }
+}
+";
+            var expected = new DiagnosticResult
+            {
+                Id = "UmbracoCodeVolatile",
+                Message = "VolatileDemo.DemoClass is volatile",
+                Severity = DiagnosticSeverity.Warning,
+                Locations = new []{ new DiagnosticResultLocation("Test0.cs", 11, 26) }
+            };
+            
+            VerifyCSharpDiagnostic(code, expected);
+        }
     }
 }
