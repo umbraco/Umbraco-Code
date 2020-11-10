@@ -151,5 +151,62 @@ namespace VolatileDemo
             
             VerifyCSharpDiagnostic(code, expected);
         }
+        
+        [TestMethod]
+        public void EnsureWarningWhenSuppressedInstantiating()
+        {
+            const string code = @"
+[assembly: UmbracoSuppressVolatile]
+namespace VolatileDemo
+{
+    [UmbracoVolatile]
+    public class DemoClass
+    {}
+
+    public class DemoClass2
+    {
+        public void Test()
+        {
+            var testClass = new DemoClass();
+        }
+    }
+}
+";
+            var expected = new DiagnosticResult
+            {
+                Id = "UmbracoCodeVolatile",
+                Message = "VolatileDemo.DemoClass is volatile",
+                Severity = DiagnosticSeverity.Warning,
+                Locations = new []{ new DiagnosticResultLocation("Test0.cs", 13, 29) }
+            };
+            
+            VerifyCSharpDiagnostic(code, expected);
+        }
+        
+        [TestMethod]
+        public void EnsureWarningWhenSuppressedInheriting()
+        {
+            const string code = @"
+[assembly: UmbracoSuppressVolatile]
+namespace VolatileDemo
+{
+    [UmbracoVolatile]
+    public class DemoClass
+    {}
+
+    public class DemoClass2 : DemoClass
+    {}
+}
+";
+            var expected = new DiagnosticResult
+            {
+                Id = "UmbracoCodeVolatile",
+                Message = "VolatileDemo.DemoClass is volatile",
+                Severity = DiagnosticSeverity.Warning,
+                Locations = new []{ new DiagnosticResultLocation("Test0.cs", 9, 5) }
+            };
+            
+            VerifyCSharpDiagnostic(code, expected);
+        }
     }
 }
