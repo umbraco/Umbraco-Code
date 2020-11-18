@@ -485,5 +485,57 @@ namespace VolatileDemo
 
             VerifyCSharpDiagnostic(code, expected);
         }
+        
+        [TestMethod]
+        public void InvokingMethodFromVolatileInterface()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    [UmbracoVolatile]
+    public interface IVolatileInterface
+    {
+        public void SomeMethod();
+    }
+    
+    public class ImplementingClass : IVolatileInterface
+    {
+        public void SomeMethod()
+        {} 
+    }
+
+    public class UsingClass
+    {
+        public void TestMethod()
+        {
+            IVolatileInterface implementingClass = new ImplementingClass();
+            implementingClass.SomeMethod();
+        }
+    }
+}
+";
+            
+            var expected = new []
+            {
+                // This error is from implementing the interface
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.IVolatileInterface is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new []{ new DiagnosticResultLocation("Test0.cs", 10, 5) }
+                },
+                // This error is from using the method defined in the interface
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.IVolatileInterface.SomeMethod() is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new []{ new DiagnosticResultLocation("Test0.cs", 21, 13) }
+                }, 
+            };
+            
+            VerifyCSharpDiagnostic(code, expected);
+        }
     }
 }
