@@ -36,10 +36,10 @@ public void Map(SomeType source, OtherType target)
 
 #### Volatile
 
-Allows for methods and classes to be marked as volatile with an attribute. Methods marked with volatile, or from a class marked as volatile,
-will throw an error and fail to compile. The error can be suppressed to a warning within an assembly by using the UmbracoSuppressVolatileAttribute.
+Allows for classes, methods, members, interfaces, enums and attributes to be marked as volatile with an attribute. Reources marked with volatile, or from a class marked as volatile,
+will throw an error and fail to compile. The error can be suppressed to a warning with the assembly level attribute UmbracoSuppressVolatileAttribute.
 
-This is intented to be used for objects/methods that were previously marked as internal, typically because the may break in the future, 
+This is intented to be used for resources that were previously marked as internal, typically because the may break in the future, 
 but are still useful in some aspect, typically testing where it doesn't matter if a method breaks. 
 
 Marking a method as volatile looks like this: 
@@ -97,7 +97,9 @@ The same thing goes for objects, if you do something like this:
     }
 ~~~
 
-All of DemoClasses methods will be marked as volatile. 
+All of DemoClasses methods and members will be marked as volatile. 
+
+For more examples see the unit tests.
 
 ##### The Attributes
 It's worthwile noting that the attributes are compared by name and not by type. 
