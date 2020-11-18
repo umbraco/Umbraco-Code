@@ -453,14 +453,14 @@ namespace VolatileDemo
                 new DiagnosticResult
                 {
                     Id = "UmbracoCodeVolatile",
-                    Message = "VolatileDemo.VolatileEnum is volatile",
+                    Message = "VolatileDemo.VolatileClassWithEnum.VolatileEnum is volatile",
                     Severity = DiagnosticSeverity.Error,
                     Locations = new[] {new DiagnosticResultLocation("Test0.cs", 16, 41)}
                 },
                 new DiagnosticResult
                 {
                     Id = "UmbracoCodeVolatile",
-                    Message = "VolatileDemo.VolatileEnum.EntryOne is volatile",
+                    Message = "VolatileDemo.VolatileClassWithEnum.VolatileEnum.EntryOne is volatile",
                     Severity = DiagnosticSeverity.Error,
                     Locations = new[] {new DiagnosticResultLocation("Test0.cs", 22, 33)}
                 }

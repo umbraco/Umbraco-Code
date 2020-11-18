@@ -19,44 +19,18 @@ namespace Umbraco.Code.Volatile
 
         private static readonly LocalizableString Title = "Umbraco Volatile";
         private static readonly LocalizableString MessageFormat = "{0} is volatile";
-        private static readonly LocalizableString MethodDescription = "The method is volatile and may break in the future and it's therefore not recommended to use outside testing, " +
-                                                                      "to suppress the error down to a warning, add UmbracoSuppressVolatile as an assembly level attribute.";
-        private static readonly LocalizableString ClassDescription = "The class is volatile and may break in the future and it's therefore not recommended to use outside testing, " +
-                                                                     "to suppress the error down to a warning, add UmbracoSuppressVolatile as an assembly level attribute.";
-        private static readonly LocalizableString MemberDescription = "The member is volatile and may break in the future and it's therefore not recommended to use outside testing, " +
-                                                                     "to suppress the error down to a warning, add UmbracoSuppressVolatile as an assembly level attribute.";
-        private static readonly LocalizableString AttributeDescription = "The attribute is volatile and may break in the future and it's therefore not recommended to use outside testing, " +
-                                                                      "to suppress the error down to a warning, add UmbracoSuppressVolatile as an assembly level attribute.";
+        private static readonly LocalizableString Description = "The resource is volatile and may break in the future and it's therefore not recommended to use outside testing, " +
+                                                                "to suppress the error down to a warning, add UmbracoSuppressVolatile as an assembly level attribute.";
 
-        private static readonly DiagnosticDescriptor MethodErrorRule 
-            = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category,
-                DiagnosticSeverity.Error, true, MethodDescription, HelpLinkUri);
-        private static readonly DiagnosticDescriptor MethodWarningRule
-            = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category,
-                DiagnosticSeverity.Warning, true, MethodDescription, HelpLinkUri);
+        private static readonly DiagnosticDescriptor ErrorRule 
+            = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, 
+                DiagnosticSeverity.Error, true, Description, HelpLinkUri);
+        private static readonly DiagnosticDescriptor WarningRule 
+            = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, 
+                DiagnosticSeverity.Warning, true, Description, HelpLinkUri);
         
-        private static readonly DiagnosticDescriptor ClassErrorRule 
-            = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, 
-                DiagnosticSeverity.Error, true, ClassDescription, HelpLinkUri);
-        private static readonly DiagnosticDescriptor ClassWarningRule 
-            = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, 
-                DiagnosticSeverity.Warning, true, ClassDescription, HelpLinkUri);
-        
-        private static readonly DiagnosticDescriptor MemberErrorRule 
-            = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, 
-                DiagnosticSeverity.Error, true, MemberDescription, HelpLinkUri);
-        private static readonly DiagnosticDescriptor MemberWarningRule 
-            = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, 
-                DiagnosticSeverity.Warning, true, MemberDescription, HelpLinkUri);
-        
-        private static readonly DiagnosticDescriptor AttributeErrorRule 
-            = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, 
-                DiagnosticSeverity.Error, true, AttributeDescription, HelpLinkUri);
-        private static readonly DiagnosticDescriptor AttributeWarningRule 
-            = new DiagnosticDescriptor(DiagnosticId, Title, MessageFormat, Category, 
-                DiagnosticSeverity.Warning, true, AttributeDescription, HelpLinkUri);
 
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(MethodErrorRule, MethodWarningRule, ClassErrorRule, ClassWarningRule);
+        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(ErrorRule, WarningRule);
 
         public override void Initialize(AnalysisContext context)
         {
@@ -100,10 +74,10 @@ namespace Umbraco.Code.Volatile
                 a.AttributeClass?.Name == "UmbracoVolatile" || a.AttributeClass?.Name == "UmbracoVolatileAttribute");
         }
         
-        private static void ReportDiagnostic(SyntaxNodeAnalysisContext context, SyntaxNode errorNode, bool isSuppressed, string messageArg)
+        private static void ReportDiagnostic(SyntaxNodeAnalysisContext context, SyntaxNode errorNode, IAssemblySymbol errorAssembly, string messageArg)
         {
             var diagnostic = Diagnostic.Create(
-                isSuppressed ? ClassWarningRule : ClassErrorRule,
+                HasSuppressAttribute(errorAssembly) ? WarningRule : ErrorRule,
                 errorNode.GetLocation(),
                 messageArg);
 
@@ -168,17 +142,9 @@ namespace Umbraco.Code.Volatile
             {
                 return;
             }
-
-            // If the assembly has a SuppressVolatileAttribute issue a warning otherwise issue an error.
-            var isReducedToWarning = HasSuppressAttribute(containingMethodSymbol.ContainingAssembly);
             
-            var diagnostic = Diagnostic.Create(
-                isReducedToWarning ? MethodWarningRule : MethodErrorRule,
-                invocationExpr.GetLocation(),
-                invokedMethodSymbol.ToString());
-            
-            context.ReportDiagnostic(diagnostic);
-            }
+            ReportDiagnostic(context, invocationExpr, containingMethodSymbol.ContainingAssembly, invokedMethodSymbol.ToString());
+        }
 
         private static void AnalyzeConstructorInvocation(SyntaxNodeAnalysisContext context)
         {
@@ -195,9 +161,7 @@ namespace Umbraco.Code.Volatile
                 return;
             }
 
-            var isReducedToWarning = HasSuppressAttribute(symbolInfo.ContainingAssembly);
-            
-            ReportDiagnostic(context, objectCreation, isReducedToWarning, symbolInfo.ToString());
+            ReportDiagnostic(context, objectCreation, symbolInfo.ContainingAssembly, symbolInfo.ToString());
         }
 
         private static void AnalyzeClassDeclaration(SyntaxNodeAnalysisContext context)
@@ -210,7 +174,7 @@ namespace Umbraco.Code.Volatile
             // symbolInfo should always have a BaseType, since all classes inherits from object.
             if(baseTypeSymbolInfo is null) return;
 
-            var isReducedToWarning = HasSuppressAttribute(symbolInfo.ContainingAssembly);
+            var containingAssembly = symbolInfo.ContainingAssembly;
             
             // Check implemented interfaces for volatile interfaces, needs to be done separately as you can both
             // inherit and implement interfaces at the same time, 
@@ -218,14 +182,14 @@ namespace Umbraco.Code.Volatile
             {
                 if (HasVolatileAttribute(interfaceSymbol.GetAttributes()))
                 {
-                    ReportDiagnostic(context, classDeclaration, isReducedToWarning, interfaceSymbol.ToString());
+                    ReportDiagnostic(context, classDeclaration, containingAssembly, interfaceSymbol.ToString());
                 }
             }
 
             // Check the inherited class as well
             if(HasVolatileAttribute(baseTypeSymbolInfo.GetAttributes()))
             { 
-                ReportDiagnostic(context, classDeclaration, isReducedToWarning, baseTypeSymbolInfo.ToString());
+                ReportDiagnostic(context, classDeclaration, containingAssembly, baseTypeSymbolInfo.ToString());
             }
         }
 
@@ -254,13 +218,7 @@ namespace Umbraco.Code.Volatile
             // Stop analysis if no volatile attribute is found.
             if (!HasVolatileAttribute(GetAllContainingTypesAttributes(symbol))) return;
 
-            var isReducedToWarning = HasSuppressAttribute(symbol.ContainingAssembly);
-
-            var diagnostic = Diagnostic.Create(
-                isReducedToWarning ? MemberWarningRule : MemberErrorRule, 
-                accessExpression.GetLocation(),
-                $"{symbol.ContainingNamespace.Name}.{symbol.ContainingType.Name}.{symbol.Name}");
-            context.ReportDiagnostic(diagnostic);
+            ReportDiagnostic(context, accessExpression, symbol.ContainingAssembly, symbol.ToString());
         }
 
         private static void AnalyzeAttributeList(SyntaxNodeAnalysisContext context)
@@ -297,13 +255,8 @@ namespace Umbraco.Code.Volatile
             // If we find no assembly we just return, this shouldn't happen however, since this would mean that 
             // the attribute is essentially being applied to nothing.
             if (containingAssembly is null) return;
-            var isReducedToWarning = HasSuppressAttribute(containingAssembly);
 
-            var diagnostic = Diagnostic.Create(
-                isReducedToWarning ? AttributeWarningRule : AttributeErrorRule,
-                attributeList.GetLocation(),
-                $"{volatileAttribute.ContainingNamespace.Name}.{volatileAttribute.Name}");
-            context.ReportDiagnostic(diagnostic);
+            ReportDiagnostic(context, attributeList, containingAssembly, volatileAttribute.ToString());
         }
         
         private static void AnalyzeParameter(SyntaxNodeAnalysisContext context)
@@ -323,14 +276,8 @@ namespace Umbraco.Code.Volatile
             // Since we don't already have the symbol for the parameter syntax we just use the same trick as in AnalyzeAttributeList
             var containingAssembly = context.ContainingSymbol?.ContainingAssembly;
             if (containingAssembly is null) return;
-            var isReducedToWarning = HasSuppressAttribute(containingAssembly);
 
-            // TODO: Create error rule for parameters, or just use a generic one, it's getting out of hand with the amount of error rules...
-            var diagnostics = Diagnostic.Create(
-                isReducedToWarning ? ClassWarningRule : ClassErrorRule,
-                parameterSyntax.GetLocation(),
-                $"{parameterTypeSymbol.ContainingNamespace}.{parameterTypeSymbol.Name}");
-            context.ReportDiagnostic(diagnostics);
+            ReportDiagnostic(context, parameterSyntax, containingAssembly, parameterTypeSymbol.ToString());
         }
         
     }
