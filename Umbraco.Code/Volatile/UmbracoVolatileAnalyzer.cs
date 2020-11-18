@@ -37,22 +37,17 @@ namespace Umbraco.Code.Volatile
             // Since the analyzer doesn't read or write anything it's safe to run it concurrently.
             // TODO: Re enable concurrent execution, it's just a headache when debugging.
             // context.EnableConcurrentExecution();
-            // Analyze methods that are invoked (InvocationExpression)
-            context.RegisterSyntaxNodeAction(AnalyzeMethodInvocation, SyntaxKind.InvocationExpression);
-            // Analyze constructors that are invoked (ObjectCreationExpression)
-            context.RegisterSyntaxNodeAction(AnalyzeConstructorInvocation, SyntaxKind.ObjectCreationExpression);
-            // Analyze classes that are declared (ClassDeclaration)
-            context.RegisterSyntaxNodeAction(AnalyzeClassDeclaration, SyntaxKind.ClassDeclaration);
-            // Analyze fields and properties that are accessed.
+            
             var propertyAndFieldKinds = new[]
             {
                 SyntaxKind.SimpleMemberAccessExpression,
                 SyntaxKind.PointerMemberAccessExpression
             };
+            context.RegisterSyntaxNodeAction(AnalyzeMethodInvocation, SyntaxKind.InvocationExpression);
+            context.RegisterSyntaxNodeAction(AnalyzeConstructorInvocation, SyntaxKind.ObjectCreationExpression);
+            context.RegisterSyntaxNodeAction(AnalyzeClassDeclaration, SyntaxKind.ClassDeclaration);
             context.RegisterSyntaxNodeAction(AnalyzeMemberAccess, propertyAndFieldKinds);
-            // Analyze when applying an attribute.
             context.RegisterSyntaxNodeAction(AnalyzeAttributeList, SyntaxKind.AttributeList);
-            // Analyze when requesting/passing parameters
             context.RegisterSyntaxNodeAction(AnalyzeParameter, SyntaxKind.Parameter);
         }
 
@@ -108,6 +103,10 @@ namespace Umbraco.Code.Volatile
             return attributes;
         }
 
+        /// <summary>
+        /// Analyzes methods that are invoked (InvocationExpression)
+        /// </summary>
+        /// <param name="context"></param>
         private static void AnalyzeMethodInvocation(SyntaxNodeAnalysisContext context)
         {
             // Get the method that is invoked as an expression
@@ -146,6 +145,10 @@ namespace Umbraco.Code.Volatile
             ReportDiagnostic(context, invocationExpr, containingMethodSymbol.ContainingAssembly, invokedMethodSymbol.ToString());
         }
 
+        /// <summary>
+        /// Analyzes constructors that are invoked (ObjectCreationExpression)
+        /// </summary>
+        /// <param name="context"></param>
         private static void AnalyzeConstructorInvocation(SyntaxNodeAnalysisContext context)
         {
             var objectCreation = (ObjectCreationExpressionSyntax) context.Node;
@@ -155,7 +158,7 @@ namespace Umbraco.Code.Volatile
             // If we can't get the object creation as INamedTypeSymbol just ignore it
             if (symbolInfo is null) return;
 
-            // If the class is not marked by a volatile attribute throw no error
+            // If the constructed class is not marked by a volatile attribute throw no error
             if (!HasVolatileAttribute(symbolInfo.GetAttributes()))
             {
                 return;
@@ -164,6 +167,10 @@ namespace Umbraco.Code.Volatile
             ReportDiagnostic(context, objectCreation, symbolInfo.ContainingAssembly, symbolInfo.ToString());
         }
 
+        /// <summary>
+        /// Analyzes classes that are declared (ClassDeclaration)
+        /// </summary>
+        /// <param name="context"></param>
         private static void AnalyzeClassDeclaration(SyntaxNodeAnalysisContext context)
         {
             var classDeclaration = (ClassDeclarationSyntax) context.Node;
@@ -193,6 +200,10 @@ namespace Umbraco.Code.Volatile
             }
         }
 
+        /// <summary>
+        /// Analyzes fields and properties that are accessed.
+        /// </summary>
+        /// <param name="context"></param>
         private static void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context)
         { 
             var accessExpression = (MemberAccessExpressionSyntax) context.Node;
@@ -221,6 +232,10 @@ namespace Umbraco.Code.Volatile
             ReportDiagnostic(context, accessExpression, symbol.ContainingAssembly, symbol.ToString());
         }
 
+        /// <summary>
+        /// Analyzes an attribute is applied.
+        /// </summary>
+        /// <param name="context"></param>
         private static void AnalyzeAttributeList(SyntaxNodeAnalysisContext context)
         {
             var attributeList = (AttributeListSyntax) context.Node;
@@ -259,6 +274,10 @@ namespace Umbraco.Code.Volatile
             ReportDiagnostic(context, attributeList, containingAssembly, volatileAttribute.ToString());
         }
         
+        /// <summary>
+        /// Analyzes when a parameter is requested or passed.
+        /// </summary>
+        /// <param name="context"></param>
         private static void AnalyzeParameter(SyntaxNodeAnalysisContext context)
         {
             var parameterSyntax = (ParameterSyntax) context.Node;
