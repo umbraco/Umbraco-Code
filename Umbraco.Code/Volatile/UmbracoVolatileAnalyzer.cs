@@ -32,7 +32,7 @@ namespace Umbraco.Code.Volatile
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(ErrorRule, WarningRule);
         
-        // We don't want to throw any errors or warnings in our own projects.
+        // We don't want to report any errors or warnings in our own projects.
         private static readonly ImmutableArray<string> AllowedProjects = ImmutableArray.Create(
             "Umbraco.Core",
             "Umbraco.Examine.Lucene",
@@ -138,7 +138,7 @@ namespace Umbraco.Code.Volatile
         /// <param name="context"></param>
         private static void AnalyzeMethodInvocation(SyntaxNodeAnalysisContext context)
         {
-            // If the method is invoked from our own project, throw no error.
+            // If the method is invoked from our own project, report no error.
             if(IsAllowedProject(context))
             {
                 return;
@@ -160,7 +160,7 @@ namespace Umbraco.Code.Volatile
                 return;
             }
 
-            // Don't raise an error if the volatile method is used within its own class
+            // Don't report an error if the volatile method is used within its own class
             if (SymbolEqualityComparer.Default.Equals(invokedMethodSymbol.ContainingType,
                 containingMethodSymbol.ContainingType))
             {
@@ -170,14 +170,12 @@ namespace Umbraco.Code.Volatile
             // Get the attributes from the invoked method and the class containing it.
             var attributes = invokedMethodSymbol.GetAttributes().Union(invokedMethodSymbol.ContainingType.GetAttributes());
             
-            // Ignore if the method or its containing class is NOT marked with the volatile attribute
+            // Report the error if the method or its containing class is marked with the volatile attribute
             // the attribute is however only checked by name, meaning that's it's not necessary to use the attributes from this project. 
-            if (!HasVolatileAttribute(attributes))
+            if (HasVolatileAttribute(attributes))
             {
-                return;
+                ReportDiagnostic(context, invocationExpr, containingMethodSymbol.ContainingAssembly, invokedMethodSymbol.ToString());
             }
-            
-            ReportDiagnostic(context, invocationExpr, containingMethodSymbol.ContainingAssembly, invokedMethodSymbol.ToString());
         }
 
         /// <summary>
@@ -186,7 +184,7 @@ namespace Umbraco.Code.Volatile
         /// <param name="context"></param>
         private static void AnalyzeConstructorInvocation(SyntaxNodeAnalysisContext context)
         {
-            // If the invocation happens from an umbraco project throw no error.
+            // If the invocation happens from an umbraco project report no error.
             if(IsAllowedProject(context)) return;
 
             var objectCreation = (ObjectCreationExpressionSyntax) context.Node;
@@ -196,13 +194,11 @@ namespace Umbraco.Code.Volatile
             // If we can't get the object creation as INamedTypeSymbol just ignore it
             if (symbolInfo is null) return;
 
-            // If the constructed class is not marked by a volatile attribute throw no error
-            if (!HasVolatileAttribute(symbolInfo.GetAttributes()))
+            // If the constructed class is marked by a volatile attribute report the error
+            if (HasVolatileAttribute(symbolInfo.GetAttributes()))
             {
-                return;
+                ReportDiagnostic(context, objectCreation, symbolInfo.ContainingAssembly, symbolInfo.ToString());
             }
-
-            ReportDiagnostic(context, objectCreation, symbolInfo.ContainingAssembly, symbolInfo.ToString());
         }
 
         /// <summary>
@@ -211,15 +207,16 @@ namespace Umbraco.Code.Volatile
         /// <param name="context"></param>
         private static void AnalyzeClassDeclaration(SyntaxNodeAnalysisContext context)
         {
-            // If the declaration happens from an umbraco project throw no error.
+            // If the declaration happens from an umbraco project report no error.
             if(IsAllowedProject(context)) return;
 
             var classDeclaration = (ClassDeclarationSyntax) context.Node;
 
             var symbolInfo = context.SemanticModel.GetDeclaredSymbol(classDeclaration);
 
+            // Get the parent class.
             var baseTypeSymbolInfo = symbolInfo?.BaseType;
-            // symbolInfo should always have a BaseType, since all classes inherits from object.
+            // symbolInfo should always have a parent, since all classes inherits from object, but better safe than sorry.
             if(baseTypeSymbolInfo is null) return;
 
             var containingAssembly = symbolInfo.ContainingAssembly;
@@ -247,7 +244,7 @@ namespace Umbraco.Code.Volatile
         /// <param name="context"></param>
         private static void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context)
         { 
-            // If the member access happens from an umbraco project throw no error.
+            // If the member access happens from an umbraco project report no error.
             if(IsAllowedProject(context)) return;
 
             var accessExpression = (MemberAccessExpressionSyntax) context.Node;
@@ -270,19 +267,20 @@ namespace Umbraco.Code.Volatile
                 return;
             }
 
-            // Stop analysis if no volatile attribute is found.
-            if (!HasVolatileAttribute(GetAllContainingTypesAttributes(symbol))) return;
-
-            ReportDiagnostic(context, accessExpression, symbol.ContainingAssembly, symbol.ToString());
+            // Report the error if a volatile attribute is found
+            if (HasVolatileAttribute(GetAllContainingTypesAttributes(symbol)))
+            {
+                ReportDiagnostic(context, accessExpression, symbol.ContainingAssembly, symbol.ToString());
+            }
         }
 
         /// <summary>
-        /// Analyzes an attribute is applied.
+        /// Analyzes when an attribute is applied.
         /// </summary>
         /// <param name="context"></param>
         private static void AnalyzeAttributeList(SyntaxNodeAnalysisContext context)
         {
-            // If the attribute is applied in an umbraco project throw no error.
+            // If the attribute is applied in an umbraco project report no error.
             if(IsAllowedProject(context)) return;
 
             var attributeList = (AttributeListSyntax) context.Node;
@@ -327,7 +325,7 @@ namespace Umbraco.Code.Volatile
         /// <param name="context"></param>
         private static void AnalyzeParameter(SyntaxNodeAnalysisContext context)
         {
-            // If the parameter is passed or requested in an umbraco project throw no error.
+            // If the parameter is passed or requested in an umbraco project report no error.
             if(IsAllowedProject(context)) return;
 
             var parameterSyntax = (ParameterSyntax) context.Node;
