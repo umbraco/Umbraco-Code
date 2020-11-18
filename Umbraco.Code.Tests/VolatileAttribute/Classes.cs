@@ -124,7 +124,7 @@ namespace VolatileDemo
         public void InheritFromClassInheritingVolatile()
         {
             // Right now you are allowed to inherit a class, that in turn inherits from a volatile class
-            // However, if you try to access q method from the volatile base class you get the error
+            // However, if you try to access a method from the volatile base class you get the error
             // See ErrorFromInheritedVolatileOnSelf tests to see an example
             const string code = @"
 namespace VolatileDemo
@@ -267,6 +267,154 @@ namespace VolatileDemo
             };
             
             VerifyCSharpDiagnostic(code, expected);
+        }
+        
+        [TestMethod]
+        public void ImplementingVolatileInterface()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    [UmbracoVolatile]
+    public interface IVolatileInterface
+    { }
+    
+    public class ImplementingClass : IVolatileInterface
+    { }
+}
+";
+            var expected = new DiagnosticResult
+            {
+                Id = "UmbracoCodeVolatile",
+                Message = "VolatileDemo.IVolatileInterface is volatile",
+                Severity = DiagnosticSeverity.Error,
+                Locations = new []{ new DiagnosticResultLocation("Test0.cs", 8, 5) }
+            };
+            
+            VerifyCSharpDiagnostic(code, expected);
+        }
+        
+        [TestMethod]
+        public void ImplementingTwoVolatileInterfaces()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    [UmbracoVolatile]
+    public interface IFirstVolatileInterface
+    { }
+
+    [UmbracoVolatile]
+    public interface ISecondVolatileInterface
+    { }
+    
+    public class ImplementingClass : IFirstVolatileInterface, ISecondVolatileInterface
+    { }
+}
+";
+            var expected = new []
+            {
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.IFirstVolatileInterface is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new []{ new DiagnosticResultLocation("Test0.cs", 12, 5) }
+                },
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.ISecondVolatileInterface is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new []{ new DiagnosticResultLocation("Test0.cs", 12, 5) }
+                }
+            };
+            
+            VerifyCSharpDiagnostic(code, expected);
+        }
+        
+        [TestMethod]
+        public void ImplementingVolatileAndNonVolatileInterface()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    [UmbracoVolatile]
+    public interface IVolatileInterface
+    { }
+
+    public interface INonVolatileInterface
+    { }
+    
+    public class ImplementingClass : IVolatileInterface, INonVolatileInterface
+    { }
+}
+";
+            var expected = new DiagnosticResult
+            {
+                Id = "UmbracoCodeVolatile",
+                Message = "VolatileDemo.IVolatileInterface is volatile",
+                Severity = DiagnosticSeverity.Error,
+                Locations = new []{ new DiagnosticResultLocation("Test0.cs", 11, 5) }
+            };
+            
+            VerifyCSharpDiagnostic(code, expected);
+        }
+        
+        [TestMethod]
+        public void ImplementingVolatileInterfaceAndVolatileClass()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    [UmbracoVolatile]
+    public interface IVolatileInterface
+    { }
+
+    [UmbracoVolatile]
+    public class VolatileClass
+    { }
+    
+    public class ImplementingClass : VolatileClass, IVolatileInterface
+    { }
+}
+";
+            var expected = new []
+            {
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.IVolatileInterface is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new []{ new DiagnosticResultLocation("Test0.cs", 12, 5) }
+                },
+                new DiagnosticResult
+                {
+                    Id = "UmbracoCodeVolatile",
+                    Message = "VolatileDemo.VolatileClass is volatile",
+                    Severity = DiagnosticSeverity.Error,
+                    Locations = new []{ new DiagnosticResultLocation("Test0.cs", 12, 5) }
+                }
+            };
+            
+            VerifyCSharpDiagnostic(code, expected);
+        }
+        
+        [TestMethod]
+        public void ImplementingNonVolatileInterface()
+        {
+            const string code = @"
+namespace VolatileDemo
+{
+    public interface INonVolatileInterface
+    { }
+    
+    public class ImplementingClass : INonVolatileInterface
+    { }
+}
+";
+
+            VerifyCSharpDiagnostic(code);
         }
     }
 }

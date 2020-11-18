@@ -100,6 +100,16 @@ namespace Umbraco.Code.Volatile
                 a.AttributeClass?.Name == "UmbracoVolatile" || a.AttributeClass?.Name == "UmbracoVolatileAttribute");
         }
         
+        private static void ReportDiagnostic(SyntaxNodeAnalysisContext context, SyntaxNode errorNode, bool isSuppressed, string messageArg)
+        {
+            var diagnostic = Diagnostic.Create(
+                isSuppressed ? ClassWarningRule : ClassErrorRule,
+                errorNode.GetLocation(),
+                messageArg);
+
+            context.ReportDiagnostic(diagnostic);
+        }
+        
         /// <summary>
         /// Gets all the attributes of the symbol, and any parent class of the symbol
         /// </summary>
@@ -110,7 +120,7 @@ namespace Umbraco.Code.Volatile
         /// </remarks>
         /// <param name="symbol">Symbol to get attributes from</param>
         /// <returns>List of all attributes</returns>
-        private static ImmutableArray<AttributeData> GetAllAttributes(ISymbol symbol)
+        private static ImmutableArray<AttributeData> GetAllContainingTypesAttributes(ISymbol symbol)
         {
             var attributes = symbol.GetAttributes();
             var containingTypeSymbol = symbol.ContainingType;
@@ -174,6 +184,7 @@ namespace Umbraco.Code.Volatile
         {
             var objectCreation = (ObjectCreationExpressionSyntax) context.Node;
 
+            // Since we're working with constructor invocation, we want the symbol info of the created type.
             var symbolInfo = context.SemanticModel.GetSymbolInfo(objectCreation.Type, context.CancellationToken).Symbol as INamedTypeSymbol;
             // If we can't get the object creation as INamedTypeSymbol just ignore it
             if (symbolInfo is null) return;
@@ -186,12 +197,7 @@ namespace Umbraco.Code.Volatile
 
             var isReducedToWarning = HasSuppressAttribute(symbolInfo.ContainingAssembly);
             
-            var diagnostic = Diagnostic.Create(
-                isReducedToWarning ? ClassWarningRule : ClassErrorRule, 
-                objectCreation.GetLocation(), 
-                $"{symbolInfo.ContainingNamespace.Name}.{symbolInfo.Name}");
-            
-            context.ReportDiagnostic(diagnostic);
+            ReportDiagnostic(context, objectCreation, isReducedToWarning, symbolInfo.ToString());
         }
 
         private static void AnalyzeClassDeclaration(SyntaxNodeAnalysisContext context)
@@ -201,20 +207,26 @@ namespace Umbraco.Code.Volatile
             var symbolInfo = context.SemanticModel.GetDeclaredSymbol(classDeclaration);
 
             var baseTypeSymbolInfo = symbolInfo?.BaseType;
-            // If there is no inheritance, or symbolInfo does not exist, throw no error
+            // symbolInfo should always have a BaseType, since all classes inherits from object.
             if(baseTypeSymbolInfo is null) return;
-            
-            // If inheritance is not marked as volatile, just return
-            if(!HasVolatileAttribute(baseTypeSymbolInfo.GetAttributes())) return;
 
             var isReducedToWarning = HasSuppressAttribute(symbolInfo.ContainingAssembly);
             
-            var diagnostic = Diagnostic.Create(
-                isReducedToWarning ? ClassWarningRule : ClassErrorRule, 
-                classDeclaration.GetLocation(), 
-                $"{baseTypeSymbolInfo.ContainingNamespace.Name}.{baseTypeSymbolInfo.Name}");
-            
-            context.ReportDiagnostic(diagnostic);
+            // Check implemented interfaces for volatile interfaces, needs to be done separately as you can both
+            // inherit and implement interfaces at the same time, 
+            foreach (var interfaceSymbol in symbolInfo.Interfaces)
+            {
+                if (HasVolatileAttribute(interfaceSymbol.GetAttributes()))
+                {
+                    ReportDiagnostic(context, classDeclaration, isReducedToWarning, interfaceSymbol.ToString());
+                }
+            }
+
+            // Check the inherited class as well
+            if(HasVolatileAttribute(baseTypeSymbolInfo.GetAttributes()))
+            { 
+                ReportDiagnostic(context, classDeclaration, isReducedToWarning, baseTypeSymbolInfo.ToString());
+            }
         }
 
         private static void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context)
@@ -240,7 +252,7 @@ namespace Umbraco.Code.Volatile
             }
 
             // Stop analysis if no volatile attribute is found.
-            if (!HasVolatileAttribute(GetAllAttributes(symbol))) return;
+            if (!HasVolatileAttribute(GetAllContainingTypesAttributes(symbol))) return;
 
             var isReducedToWarning = HasSuppressAttribute(symbol.ContainingAssembly);
 
@@ -306,7 +318,7 @@ namespace Umbraco.Code.Volatile
             if (parameterTypeSymbol is null) return;
 
             // If it's not volatile we stop
-            if (!HasVolatileAttribute(GetAllAttributes(parameterTypeSymbol))) return;
+            if (!HasVolatileAttribute(GetAllContainingTypesAttributes(parameterTypeSymbol))) return;
             
             // Since we don't already have the symbol for the parameter syntax we just use the same trick as in AnalyzeAttributeList
             var containingAssembly = context.ContainingSymbol?.ContainingAssembly;
