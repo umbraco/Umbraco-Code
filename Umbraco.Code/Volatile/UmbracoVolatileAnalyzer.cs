@@ -31,12 +31,35 @@ namespace Umbraco.Code.Volatile
         
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(ErrorRule, WarningRule);
+        
+        // We don't want to throw any errors or warnings in our own projects.
+        private static readonly ImmutableArray<string> AllowedProjects = ImmutableArray.Create(
+            "Umbraco.Core",
+            "Umbraco.Examine.Lucene",
+            "Umbraco.Infrastructure",
+            "Umbraco.ModelsBuilder.Embedded",
+            "Umbraco.Persistance.SqlCe",
+            "Umbraco.PublishedCache.NuCache",
+            "Umbraco.Web",
+            "Umbraco.Web.BackOffice",
+            "Umbraco.Web.Common",
+            "Umbraco.Web.UI",
+            "Umbraco.Web.UI.Client",
+            "Umbraco.Web.UI.NetCore",
+            "Umbraco.Web.Website",
+            "Umbraco.Tests",
+            "Umbraco.Tests.Common",
+            "Umbraco.Tests.UnitTests",
+            "Umbraco.Tests.Integration",
+            "Umbraco.Tests.TestData",
+            "Umbraco.Tests.Benchmarks"
+            );
 
         public override void Initialize(AnalysisContext context)
         {
             // Since the analyzer doesn't read or write anything it's safe to run it concurrently.
             // TODO: Re enable concurrent execution, it's just a headache when debugging.
-            // context.EnableConcurrentExecution();
+            context.EnableConcurrentExecution();
             
             var propertyAndFieldKinds = new[]
             {
@@ -49,6 +72,13 @@ namespace Umbraco.Code.Volatile
             context.RegisterSyntaxNodeAction(AnalyzeMemberAccess, propertyAndFieldKinds);
             context.RegisterSyntaxNodeAction(AnalyzeAttributeList, SyntaxKind.AttributeList);
             context.RegisterSyntaxNodeAction(AnalyzeParameter, SyntaxKind.Parameter);
+        }
+        
+        private static bool IsAllowedProject(SyntaxNodeAnalysisContext context)
+        {
+            var containingAssembly = context.ContainingSymbol?.ContainingAssembly;
+            if (containingAssembly is null) return false;
+            return AllowedProjects.Contains(containingAssembly.Name);
         }
 
         private static bool HasSuppressAttribute(IAssemblySymbol assemblySymbol)
@@ -78,7 +108,7 @@ namespace Umbraco.Code.Volatile
 
             context.ReportDiagnostic(diagnostic);
         }
-        
+
         /// <summary>
         /// Gets all the attributes of the symbol, and any parent class of the symbol
         /// </summary>
@@ -109,6 +139,12 @@ namespace Umbraco.Code.Volatile
         /// <param name="context"></param>
         private static void AnalyzeMethodInvocation(SyntaxNodeAnalysisContext context)
         {
+            // If the method is invoked from our own project, throw no error.
+            if(IsAllowedProject(context))
+            {
+                return;
+            }
+            
             // Get the method that is invoked as an expression
             var invocationExpr = (InvocationExpressionSyntax)context.Node;
             
@@ -118,7 +154,7 @@ namespace Umbraco.Code.Volatile
             {
                 return;
             }
-            
+
             // Ignore if we cant get the method from which the invoked method was invoked
             if (!(context.ContainingSymbol is IMethodSymbol containingMethodSymbol))
             {
@@ -151,6 +187,9 @@ namespace Umbraco.Code.Volatile
         /// <param name="context"></param>
         private static void AnalyzeConstructorInvocation(SyntaxNodeAnalysisContext context)
         {
+            // If the invocation happens from an umbraco project throw no error.
+            if(IsAllowedProject(context)) return;
+
             var objectCreation = (ObjectCreationExpressionSyntax) context.Node;
 
             // Since we're working with constructor invocation, we want the symbol info of the created type.
@@ -173,6 +212,9 @@ namespace Umbraco.Code.Volatile
         /// <param name="context"></param>
         private static void AnalyzeClassDeclaration(SyntaxNodeAnalysisContext context)
         {
+            // If the declaration happens from an umbraco project throw no error.
+            if(IsAllowedProject(context)) return;
+
             var classDeclaration = (ClassDeclarationSyntax) context.Node;
 
             var symbolInfo = context.SemanticModel.GetDeclaredSymbol(classDeclaration);
@@ -206,8 +248,11 @@ namespace Umbraco.Code.Volatile
         /// <param name="context"></param>
         private static void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context)
         { 
+            // If the member access happens from an umbraco project throw no error.
+            if(IsAllowedProject(context)) return;
+
             var accessExpression = (MemberAccessExpressionSyntax) context.Node;
-            
+
             var symbol = context.SemanticModel.GetSymbolInfo(accessExpression, context.CancellationToken).Symbol;
 
             // If no symbol was found, return
@@ -238,6 +283,9 @@ namespace Umbraco.Code.Volatile
         /// <param name="context"></param>
         private static void AnalyzeAttributeList(SyntaxNodeAnalysisContext context)
         {
+            // If the attribute is applied in an umbraco project throw no error.
+            if(IsAllowedProject(context)) return;
+
             var attributeList = (AttributeListSyntax) context.Node;
 
             ISymbol volatileAttribute = null;
@@ -280,6 +328,9 @@ namespace Umbraco.Code.Volatile
         /// <param name="context"></param>
         private static void AnalyzeParameter(SyntaxNodeAnalysisContext context)
         {
+            // If the parameter is passed or requested in an umbraco project throw no error.
+            if(IsAllowedProject(context)) return;
+
             var parameterSyntax = (ParameterSyntax) context.Node;
 
             // We try and get the type of the parameter as a symbol to see if it's volatile, if we can't we stop analysis
