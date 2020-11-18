@@ -58,7 +58,6 @@ namespace Umbraco.Code.Volatile
         public override void Initialize(AnalysisContext context)
         {
             // Since the analyzer doesn't read or write anything it's safe to run it concurrently.
-            // TODO: Re enable concurrent execution, it's just a headache when debugging.
             context.EnableConcurrentExecution();
             
             var propertyAndFieldKinds = new[]
