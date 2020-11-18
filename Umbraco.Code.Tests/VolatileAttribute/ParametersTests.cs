@@ -107,14 +107,14 @@ namespace VolatileDemo
                     Id = "UmbracoCodeVolatile",
                     Message = "VolatileDemo.TestEnum is volatile",
                     Severity = DiagnosticSeverity.Error,
-                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 13, 41)}
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 13, 41) }
                 },
                 new DiagnosticResult
                 {
                     Id = "UmbracoCodeVolatile",
                     Message = "VolatileDemo.TestEnum.Test is volatile",
                     Severity = DiagnosticSeverity.Error,
-                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 19, 33)}
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 19, 33) }
                 } 
             };
             VerifyCSharpDiagnostic(code, expected);
@@ -157,14 +157,14 @@ namespace VolatileDemo
                     Id = "UmbracoCodeVolatile",
                     Message = "VolatileDemo.VolatileClassWithEnum.VolatileEnum is volatile",
                     Severity = DiagnosticSeverity.Error,
-                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 16, 41)}
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 41) }
                 },
                 new DiagnosticResult
                 {
                     Id = "UmbracoCodeVolatile",
                     Message = "VolatileDemo.VolatileClassWithEnum.VolatileEnum.EntryOne is volatile",
                     Severity = DiagnosticSeverity.Error,
-                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 22, 33)}
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 22, 33) }
                 }
             };
             VerifyCSharpDiagnostic(code, expected);

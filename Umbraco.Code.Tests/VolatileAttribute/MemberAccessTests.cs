@@ -45,14 +45,14 @@ namespace VolatileDemo
                     Id = "UmbracoCodeVolatile",
                     Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
                     Severity = DiagnosticSeverity.Error,
-                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 15, 13)}
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 13) }
                 },
                 new DiagnosticResult
                 {
                     Id = "UmbracoCodeVolatile",
                     Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
                     Severity = DiagnosticSeverity.Error,
-                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 16, 24)}
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 24) }
                 }
             };
 
@@ -88,7 +88,7 @@ namespace VolatileDemo
                 Id = "UmbracoCodeVolatile",
                 Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
                 Severity = DiagnosticSeverity.Warning,
-                Locations = new[] {new DiagnosticResultLocation("Test0.cs", 16, 13)}
+                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 13) }
             };
 
             VerifyCSharpDiagnostic(code, expected);
@@ -150,14 +150,14 @@ namespace VolatileDemo
                     Id = "UmbracoCodeVolatile",
                     Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
                     Severity = DiagnosticSeverity.Error,
-                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 15, 13)}
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 13) }
                 },
                 new DiagnosticResult
                 {
                     Id = "UmbracoCodeVolatile",
                     Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
                     Severity = DiagnosticSeverity.Error,
-                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 16, 24)}
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 16, 24) }
                 }
             };
 
@@ -219,14 +219,14 @@ namespace VolatileDemo
                     Id = "UmbracoCodeVolatile",
                     Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
                     Severity = DiagnosticSeverity.Error,
-                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 14, 13)}
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 14, 13) }
                 },
                 new DiagnosticResult
                 {
                     Id = "UmbracoCodeVolatile",
                     Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
                     Severity = DiagnosticSeverity.Error,
-                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 15, 24)}
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 24) }
                 }
             };
 
@@ -288,14 +288,14 @@ namespace VolatileDemo
                     Id = "UmbracoCodeVolatile",
                     Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
                     Severity = DiagnosticSeverity.Error,
-                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 17, 13)}
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 17, 13) }
                 },
                 new DiagnosticResult
                 {
                     Id = "UmbracoCodeVolatile",
                     Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
                     Severity = DiagnosticSeverity.Error,
-                    Locations = new[] {new DiagnosticResultLocation("Test0.cs", 18, 24)}
+                    Locations = new[] { new DiagnosticResultLocation("Test0.cs", 18, 24) }
                 }
             };
 
@@ -332,7 +332,7 @@ namespace VolatileDemo
                 Id = "UmbracoCodeVolatile",
                 Message = "VolatileDemo.DemoClass.VolatileProperty is volatile",
                 Severity = DiagnosticSeverity.Error,
-                Locations = new[] {new DiagnosticResultLocation("Test0.cs", 17, 24)}
+                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 17, 24) }
             };
 
             VerifyCSharpDiagnostic(code, expected);
@@ -366,7 +366,7 @@ namespace VolatileDemo
                 Id = "UmbracoCodeVolatile",
                 Message = "VolatileDemo.TestEnum.Test is volatile",
                 Severity = DiagnosticSeverity.Error,
-                Locations = new[] {new DiagnosticResultLocation("Test0.cs", 15, 29)}
+                Locations = new[] { new DiagnosticResultLocation("Test0.cs", 15, 29) }
             };
             VerifyCSharpDiagnostic(code, expected);
         }
