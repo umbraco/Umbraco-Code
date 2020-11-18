@@ -7,7 +7,7 @@ using Umbraco.Code.Volatile;
 namespace Umbraco.Code.Tests.VolatileAttribute
 {
     [TestClass]
-    public class MemberAccess : CodeFixVerifier
+    public class MemberAccessTests : CodeFixVerifier
     {
         protected override DiagnosticAnalyzer GetCSharpDiagnosticAnalyzer()
         {
