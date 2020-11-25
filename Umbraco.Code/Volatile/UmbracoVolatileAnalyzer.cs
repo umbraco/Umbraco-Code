@@ -33,6 +33,8 @@ namespace Umbraco.Code.Volatile
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } = ImmutableArray.Create(ErrorRule, WarningRule);
         
         // We don't want to report any errors or warnings in our own projects.
+        // We could just suppress the errors in the Umbraco project, however, this would result in an immense amount of irrelevant warnings
+        // which would obfuscate actual warnings we might be interested in.
         private static readonly ImmutableArray<string> AllowedProjects = ImmutableArray.Create(
             "Umbraco.Core",
             "Umbraco.Examine.Lucene",
