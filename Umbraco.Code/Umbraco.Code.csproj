@@ -1,29 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<Company>Umbraco HQ</Company>
+		<Authors>Umbraco</Authors>
+		<Copyright>Copyright © Umbraco $([System.DateTime]::Today.ToString('yyyy'))</Copyright>
+		<Product>Umbraco Code</Product>
+		<PackageProjectUrl>https://github.com/umbraco/Umbraco-Code</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/umbraco/Umbraco-Code</RepositoryUrl>
+		<PackageIconUrl>https://umbraco.com/dist/nuget/logo-small.png</PackageIconUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageTags>umbraco</PackageTags>
+		<NeutralLanguage>en-US</NeutralLanguage>
+		<IncludeBuildOutput>false</IncludeBuildOutput>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<Version>2.1.0</Version>
+		<Description>Code-level tools for Umbraco</Description>
+	</PropertyGroup>
 
-  <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <IncludeBuildOutput>false</IncludeBuildOutput>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <LangVersion>latest</LangVersion>
-    <Version>2.0.0</Version>
-    <Authors>Umbraco HQ</Authors>
-    <Company>Umbraco</Company>
-    <PackageProjectUrl>https://github.com/umbraco/Umbraco-Code</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/umbraco/Umbraco-Code</RepositoryUrl>
-    <Description>Code-level tools for Umbraco</Description>
-    <Copyright>Copyright (C) Umbraco 2019</Copyright>
-    <PackageLicenseUrl>http://opensource.org/licenses/MIT</PackageLicenseUrl>
-    <PackageIconUrl>https://umbraco.com/dist/nuget/logo-small.png</PackageIconUrl>
-  </PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.8.0" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!--
-    <None Update="tools\*.ps1" CopyToOutputDirectory="Always" Pack="true" PackagePath="" />
-    -->
-    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+	</ItemGroup>
 </Project>
