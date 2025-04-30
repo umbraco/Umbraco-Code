@@ -38,13 +38,13 @@ public void Map(SomeType source, OtherType target)
 
 ### Volatile
 
-Allows for classes, methods, members, interfaces, enums and attributes to be marked as volatile with an attribute. Reources marked with volatile, or from a class marked as volatile,
+Allows for classes, methods, members, interfaces, enums and attributes to be marked as volatile with an attribute. Resources marked with volatile, or from a class marked as volatile,
 will throw an error and fail to compile. The error can be suppressed to a warning with the assembly level attribute UmbracoSuppressVolatileAttribute.
 
-This is intented to be used for resources that were previously marked as internal, typically because the may break in the future, 
-but are still useful in some aspect, typically testing where it doesn't matter if a method breaks. 
+This is intended to be used for resources that were previously marked as internal, typically because the may break in the future,
+but are still useful in some aspect, typically testing where it doesn't matter if a method breaks.
 
-Marking a method as volatile looks like this: 
+Marking a method as volatile looks like this:
 ~~~c#
     public class DemoClass
     {
@@ -57,8 +57,8 @@ Marking a method as volatile looks like this:
     }
 ~~~
 
-Whenever ```DemoClass.VolatileMethod``` is invoked there'll be raised an UmbracoCodeVolatile error, 
-to suppress it to a warning use the assembly level UmbracoSuppressVolatileAttribute: 
+Whenever ```DemoClass.VolatileMethod``` is invoked there'll be raised an UmbracoCodeVolatile error,
+to suppress it to a warning use the assembly level UmbracoSuppressVolatileAttribute:
 ~~~c#
 [assembly: UmbracoSuppressVolatile]
 namespace VolatileDemo
@@ -86,7 +86,7 @@ namespace VolatileDemo
 
 Now there'll only be raised a warning even though ```DemoClass.VolatileMethod``` is marked as volatile.
 
-The same thing goes for objects, if you do something like this: 
+The same thing goes for objects, if you do something like this:
 ~~~c#
     [UmbracoVolatile]
     public class DemoClass
@@ -99,15 +99,15 @@ The same thing goes for objects, if you do something like this:
     }
 ~~~
 
-All of DemoClasses methods and members will be marked as volatile. 
+All of DemoClasses methods and members will be marked as volatile.
 
 For more examples see the unit tests.
 
 #### The Attributes
-It's worthwile noting that the attributes are compared by name and not by type. 
+It's worthwhile noting that the attributes are compared by name and not by type.
 
-This means that it's not needed to use the attributes that are included in this project (the namespace of analyzers is not accesible), 
-any attribute named UmbracoVolatileAttribute or UmbracoSuppressVolatileAttribute will do the trick. 
+This means that it's not needed to use the attributes that are included in this project (the namespace of analyzers is not accessible),
+any attribute named UmbracoVolatileAttribute or UmbracoSuppressVolatileAttribute will do the trick.
 
 ## Deployment
 
