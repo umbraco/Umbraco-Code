@@ -13,7 +13,7 @@
 		<NeutralLanguage>en-US</NeutralLanguage>
 		<IncludeBuildOutput>false</IncludeBuildOutput>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-		<Version>3.0.0</Version>
+		<Version>3.0.0-beta</Version>
 		<Description>Code-level tools for Umbraco</Description>
 	</PropertyGroup>
 
